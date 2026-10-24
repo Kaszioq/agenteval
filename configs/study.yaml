@@ -1,0 +1,23 @@
+# Main study configuration. Models run locally through Ollama; the budget is zero.
+run_name: study
+models:
+  A:
+    name: ollama/qwen2.5-coder:7b
+  B:
+    name: ollama/llama3.1:8b
+seed: 1234
+temperature: 0.0
+retry_temperature: 0.7
+backdoor_attempts: 3
+max_tokens_author: 1024
+max_tokens_judge: 16
+max_tokens_monitor: 160
+problem_limit: null          # all 164 HumanEval problems
+exec_timeout: 10.0
+max_connections: 1           # Ollama serves one request at a time by default
+min_valid_backdoors: 25      # E3 stops below this many valid backdoors per author
+allow_paid: false            # hard budget rule: never set true for this study
+allow_free_tier_api: false
+results_dir: results
+log_dir: logs
+cache_dir: .cache/inspect

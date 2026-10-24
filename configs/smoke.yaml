@@ -1,0 +1,14 @@
+# Five-problem smoke test with the real local models.
+run_name: smoke
+models:
+  A:
+    name: ollama/qwen2.5-coder:7b
+  B:
+    name: ollama/llama3.1:8b
+seed: 1234
+problem_limit: 5
+backdoor_attempts: 3
+min_valid_backdoors: 0
+max_connections: 1
+allow_paid: false
+allow_free_tier_api: false

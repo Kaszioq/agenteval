@@ -1,0 +1,14 @@
+# Offline configuration: both models are deterministic mocks (no network, no cost).
+run_name: mock
+models:
+  A:
+    name: mockllm/A
+  B:
+    name: mockllm/B
+seed: 1234
+problem_ids: [HumanEval/0, HumanEval/1, HumanEval/2, HumanEval/3, HumanEval/4, HumanEval/5]
+backdoor_attempts: 2
+min_valid_backdoors: 1
+max_connections: 4
+log_dir: logs
+cache_dir: .cache/inspect
