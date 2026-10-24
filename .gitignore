@@ -1,0 +1,29 @@
+# secrets
+.env
+.env.*
+*.key
+*.pem
+secrets*
+
+# environments and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+*.egg-info/
+build/
+dist/
+
+# model files
+*.gguf
+*.safetensors
+*.bin
+models/
+
+# large raw logs (Inspect .eval logs and scratch runs)
+logs/
+*.eval
+results/*/raw/
+results/mock*/
