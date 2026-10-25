@@ -35,6 +35,15 @@ Transform checks:
 | raw | 208 | 208 |
 | renamed | 208 | 208 |
 
+## Exploratory E1b: single-item "did you write this?"
+
+Planned after the E1 results. Exact 95% interval over problems; ties excluded.
+
+| judge | n_pairs | ties | paired_auroc | own_higher_share | ci_low | ci_high | binomial_p | verdict | mean_p_yes_own | mean_p_yes_other | mean_diff | diff_ci_low | diff_ci_high | answered_yes_rate |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A | 104 | 5 | 0.534 | 0.535 | 0.432 | 0.636 | 0.547 | inconclusive | 0.604 | 0.571 | 0.034 | 0.007 | 0.063 | 0.803 |
+| B | 104 | 4 | 0.462 | 0.460 | 0.360 | 0.563 | 0.484 | inconclusive | 0.000 | 0.000 | -0.000 | -0.000 | 0.000 | 0.000 |
+
 ## Exploratory: suspicion on honest code (stripped code, primary view)
 
 Not pre-registered. Same interaction as E3, computed on honest solutions.

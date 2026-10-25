@@ -72,7 +72,8 @@
   "stages": {
     "honest": "2026-10-25T03:50:57+00:00",
     "monitor_honest": "2026-10-25T11:41:04+00:00",
-    "recognition": "2026-10-25T03:58:59+00:00"
+    "recognition": "2026-10-25T03:58:59+00:00",
+    "self_recognition": "2026-10-25T11:56:56+00:00"
   },
   "versions": {
     "inspect_ai": "0.3.284",
