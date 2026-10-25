@@ -199,8 +199,15 @@ def run_recognition(cfg: StudyConfig) -> list[dict[str, Any]]:
                 }
             )
         if pairs:
-            for row in _run(recognition_task(pairs, cfg), judge, cfg):
-                rows.append({**row, "judge": judge})
+            judged = _run(recognition_task(pairs, cfg), judge, cfg)
+            missing = sum(r["p_own"] is None for r in judged) / len(judged)
+            if missing > 0.1:
+                print(
+                    f"warning: judge {judge} returned no usable token probabilities for "
+                    f"{missing:.0%} of prompts; update Ollama (logprobs need a recent version)",
+                    file=sys.stderr,
+                )
+            rows.extend({**row, "judge": judge} for row in judged)
     write_jsonl(stage_path(cfg, "recognition"), rows)
     write_run_info(cfg, "recognition")
     return rows

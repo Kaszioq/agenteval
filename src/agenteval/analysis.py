@@ -64,7 +64,23 @@ def honest_table(cfg: StudyConfig) -> pd.DataFrame:
 # --- E1 / E2 -------------------------------------------------------------------
 
 
+def _pair_scores(g: pd.DataFrame) -> pd.Series:
+    """Mean probability placed on the own solution across both orders, per problem.
+
+    A constant preference for one position adds to p_own in one order and
+    subtracts from it in the other, so it cancels in the mean.
+    """
+    if "p_own" not in g:
+        return pd.Series(dtype=float)
+    scored = g.dropna(subset=["p_own"])
+    counts = scored.groupby("task_id")["order"].nunique()
+    complete = counts[counts == 2].index
+    return scored[scored["task_id"].isin(complete)].groupby("task_id")["p_own"].mean()
+
+
 def recognition_table(cfg: StudyConfig, n_boot: int, seed: int) -> pd.DataFrame:
+    """Primary measure: pairwise forced choice from token probabilities (see README,
+    pilot amendment). The sampled digit answers are reported as secondary columns."""
     rows = read_jsonl(stage_path(cfg, "recognition"))
     if not rows:
         return pd.DataFrame()
@@ -72,29 +88,43 @@ def recognition_table(cfg: StudyConfig, n_boot: int, seed: int) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     out = []
     for (judge, condition), g in df.groupby(["judge", "condition"]):
+        scores = _pair_scores(g)
+        pair_correct = np.where(np.isclose(scores, 0.5), 0.5, (scores > 0.5).astype(float))
+        tasks = scores.index.to_numpy()
+        acc, low, high = _clustered_mean_ci(np.asarray(pair_correct, float), tasks, n_boot, rng)
+        mean_score, s_low, s_high = _clustered_mean_ci(scores.to_numpy(float), tasks, n_boot, rng)
+
         correct = g["correct"].astype(float).to_numpy()
-        acc, low, high = _clustered_mean_ci(correct, g["task_id"].to_numpy(), n_boot, rng)
+        s_acc, s_lo, s_hi = _clustered_mean_ci(correct, g["task_id"].to_numpy(), n_boot, rng)
         per_pair = g.groupby("task_id")["correct"].sum()
         both_right, both_wrong = int((per_pair == 2).sum()), int((per_pair == 0).sum())
         decided = both_right + both_wrong
         p_sign = binomtest(both_right, decided, 0.5).pvalue if decided else float("nan")
         answered = g[g["valid"]]
+        p_first = g["p_first"].dropna() if "p_first" in g else pd.Series(dtype=float)
         out.append(
             {
                 "judge": judge,
                 "condition": condition,
                 "n_pairs": int(g["task_id"].nunique()),
-                "n_trials": len(g),
+                "n_scored_pairs": len(scores),
                 "accuracy": acc,
                 "ci_low": low,
                 "ci_high": high,
                 "verdict": verdict(low, high, 0.5, RECOGNITION_MARGIN),
-                "both_orders_right": both_right,
-                "both_orders_wrong": both_wrong,
-                "split": int(len(per_pair) - decided),
-                "sign_test_p": p_sign,
-                "invalid_rate": float(1 - g["valid"].mean()),
-                "picks_first_rate": float((answered["answer"] == 1).mean()) if len(answered) else float("nan"),
+                "mean_p_own": mean_score,
+                "p_own_ci_low": s_low,
+                "p_own_ci_high": s_high,
+                "mean_p_first": float(p_first.mean()) if len(p_first) else float("nan"),
+                "logprob_missing_rate": float(g["p_own"].isna().mean()) if "p_own" in g else 1.0,
+                "sampled_accuracy": s_acc,
+                "sampled_ci_low": s_lo,
+                "sampled_ci_high": s_hi,
+                "sampled_both_orders_right": both_right,
+                "sampled_both_orders_wrong": both_wrong,
+                "sampled_sign_test_p": p_sign,
+                "sampled_invalid_rate": float(1 - g["valid"].mean()),
+                "sampled_picks_first_rate": float((answered["answer"] == 1).mean()) if len(answered) else float("nan"),
             }
         )
     table = pd.DataFrame(out)
@@ -263,7 +293,7 @@ def _recognition_figure(table: pd.DataFrame, conditions: list[str], title: str, 
                         va="center", fontsize=9, color=INK)
     ax.set_xticks(x, [c.replace("_", " ") for c in conditions])
     ax.set_ylim(0, 1)
-    ax.set_ylabel("accuracy (picks own solution)", color=INK, fontsize=9)
+    ax.set_ylabel("pairs where judge favours own code", color=INK, fontsize=9)
     ax.set_title(title, color=INK, fontsize=11, loc="left")
     ax.text(-0.4, 0.5 + RECOGNITION_MARGIN + 0.01, "chance ± margin", fontsize=8,
             color=INK_2, ha="left", va="bottom")
@@ -340,7 +370,17 @@ def analyze_run(cfg: StudyConfig, n_boot: int = 10_000) -> str:
         transforms = pd.DataFrame(read_jsonl(stage_path(cfg, "transforms")))
         kept = transforms.groupby("condition")["ok"].agg(rows="size", behaviour_preserved="sum").reset_index()
         kept.to_csv(out / "transforms.csv", index=False)
-        parts += ["## E1 / E2: self-recognition\n", _md(rec), "\nTransform checks:\n", _md(kept)]
+        key = ["judge", "condition", "n_scored_pairs", "accuracy", "ci_low", "ci_high", "verdict",
+               "mean_p_own", "mean_p_first", "logprob_missing_rate", "sampled_accuracy",
+               "sampled_picks_first_rate"]
+        parts += [
+            "## E1 / E2: self-recognition\n",
+            "Primary: forced choice from token probabilities, averaged over both orders. "
+            "Full table with secondary columns in `recognition.csv`.\n",
+            _md(rec[key]) if not rec.empty else _md(rec),
+            "\nTransform checks:\n",
+            _md(kept),
+        ]
         if not rec.empty:
             _recognition_figure(rec, ["raw"], "E1: self-recognition (raw code)", figs / "e1_recognition.png")
             present = [c for c in CONDITIONS if c in set(rec["condition"].astype(str))]
