@@ -136,6 +136,7 @@ def recognition_table(cfg: StudyConfig, n_boot: int, seed: int) -> pd.DataFrame:
                 "mean_p_own": mean_score,
                 "p_own_ci_low": s_low,
                 "p_own_ci_high": s_high,
+                "p_own_verdict": verdict(s_low, s_high, 0.5, RECOGNITION_MARGIN, len(scores)),
                 "mean_p_first": float(p_first.mean()) if len(p_first) else float("nan"),
                 "logprob_missing_rate": float(g["p_own"].isna().mean()) if "p_own" in g else 1.0,
                 "sampled_accuracy": s_acc,
@@ -149,8 +150,22 @@ def recognition_table(cfg: StudyConfig, n_boot: int, seed: int) -> pd.DataFrame:
             }
         )
     table = pd.DataFrame(out)
+    table["binomial_p_holm"] = holm(table["binomial_p"].to_numpy(float))
     table["condition"] = pd.Categorical(table["condition"], CONDITIONS, ordered=True)
     return table.sort_values(["judge", "condition"]).reset_index(drop=True)
+
+
+def holm(pvalues: np.ndarray) -> np.ndarray:
+    """Holm-Bonferroni adjusted p-values (NaN entries are left out of the family)."""
+    adjusted = np.full(len(pvalues), np.nan)
+    valid = np.where(np.isfinite(pvalues))[0]
+    order = valid[np.argsort(pvalues[valid])]
+    m = len(order)
+    running = 0.0
+    for rank, i in enumerate(order):
+        running = max(running, min(1.0, (m - rank) * pvalues[i]))
+        adjusted[i] = running
+    return adjusted
 
 
 # --- E3 ------------------------------------------------------------------------
@@ -297,32 +312,34 @@ def _style(ax: Any) -> None:
 
 
 def _recognition_figure(table: pd.DataFrame, conditions: list[str], title: str, path: Path) -> None:
+    """Two panels: share of pairs where the judge favours its own code, and mean p_own."""
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(max(4.0, 1.4 * len(conditions) + 2), 3.6), facecolor=SURFACE)
-    _style(ax)
-    ax.axhspan(0.5 - RECOGNITION_MARGIN, 0.5 + RECOGNITION_MARGIN, color=GRID, alpha=0.5, lw=0)
-    ax.axhline(0.5, color=INK_2, lw=1, ls="--")
+    panels = (
+        ("accuracy", "ci_low", "ci_high", "pairs where judge favours own code", (0.0, 1.0)),
+        ("mean_p_own", "p_own_ci_low", "p_own_ci_high", "mean probability on own code", (0.3, 0.7)),
+    )
+    width = max(4.0, 1.3 * len(conditions) + 1.5)
+    fig, axes = plt.subplots(1, 2, figsize=(2 * width, 3.6), facecolor=SURFACE)
     x = np.arange(len(conditions))
-    for offset, judge in ((-0.12, "A"), (0.12, "B")):
-        sub = table[table["judge"] == judge].set_index("condition").reindex(conditions)
-        y = sub["accuracy"].to_numpy(float)
-        err = np.vstack([y - sub["ci_low"].to_numpy(float), sub["ci_high"].to_numpy(float) - y])
-        ax.errorbar(x + offset, y, yerr=err, fmt="o", ms=7, color=COLORS[judge], ecolor=COLORS[judge],
-                    elinewidth=2, capsize=0, label=f"judge {judge}")
-        last = np.where(np.isfinite(y))[0]
-        if len(last):
-            i = last[-1]
-            ax.annotate(f"{judge}", (x[i] + offset, y[i]), xytext=(8, 0), textcoords="offset points",
-                        va="center", fontsize=9, color=INK)
-    ax.set_xticks(x, [c.replace("_", " ") for c in conditions])
-    ax.set_ylim(0, 1)
-    ax.set_ylabel("pairs where judge favours own code", color=INK, fontsize=9)
-    ax.set_title(title, color=INK, fontsize=11, loc="left")
-    ax.text(-0.4, 0.5 + RECOGNITION_MARGIN + 0.01, "chance ± margin", fontsize=8,
-            color=INK_2, ha="left", va="bottom")
-    ax.set_xlim(-0.5, len(conditions) - 0.5)
-    ax.legend(frameon=False, fontsize=9, loc="lower left")
+    for ax, (col, lo, hi, label, ylim) in zip(axes, panels):
+        _style(ax)
+        ax.axhspan(0.5 - RECOGNITION_MARGIN, 0.5 + RECOGNITION_MARGIN, color=GRID, alpha=0.5, lw=0)
+        ax.axhline(0.5, color=INK_2, lw=1, ls="--")
+        for offset, judge in ((-0.12, "A"), (0.12, "B")):
+            sub = table[table["judge"] == judge].set_index("condition").reindex(conditions)
+            y = sub[col].to_numpy(float)
+            err = np.vstack([y - sub[lo].to_numpy(float), sub[hi].to_numpy(float) - y])
+            ax.errorbar(x + offset, y, yerr=err, fmt="o", ms=7, color=COLORS[judge],
+                        ecolor=COLORS[judge], elinewidth=2, capsize=0, label=f"judge {judge}")
+        ax.set_xticks(x, [c.replace("_", " ") for c in conditions])
+        ax.set_xlim(-0.5, len(conditions) - 0.5)
+        ax.set_ylim(*ylim)
+        ax.set_ylabel(label, color=INK, fontsize=9)
+        ax.text(-0.4, 0.5 + RECOGNITION_MARGIN - 0.005, "chance ± margin", fontsize=8,
+                color=INK_2, ha="left", va="top")
+    axes[0].legend(frameon=False, fontsize=9, loc="lower left")
+    fig.suptitle(title, color=INK, fontsize=11, x=0.01, ha="left")
     fig.tight_layout()
     fig.savefig(path, dpi=150, facecolor=SURFACE)
     plt.close(fig)
@@ -394,13 +411,14 @@ def analyze_run(cfg: StudyConfig, n_boot: int = 10_000) -> str:
         transforms = pd.DataFrame(read_jsonl(stage_path(cfg, "transforms")))
         kept = transforms.groupby("condition")["ok"].agg(rows="size", behaviour_preserved="sum").reset_index()
         kept.to_csv(out / "transforms.csv", index=False)
-        key = ["judge", "condition", "n_scored_pairs", "accuracy", "ci_low", "ci_high", "binomial_p", "verdict",
-               "mean_p_own", "mean_p_first", "logprob_missing_rate", "sampled_accuracy",
-               "sampled_picks_first_rate"]
+        key = ["judge", "condition", "n_scored_pairs", "accuracy", "ci_low", "ci_high", "binomial_p",
+               "binomial_p_holm", "verdict", "mean_p_own", "p_own_ci_low", "p_own_ci_high",
+               "p_own_verdict", "mean_p_first", "sampled_accuracy", "sampled_picks_first_rate"]
         parts += [
             "## E1 / E2: self-recognition\n",
             "Primary: forced choice from token probabilities, averaged over both orders; "
-            "exact (Clopper-Pearson) 95% interval over pairs. "
+            "exact (Clopper-Pearson) 95% interval over pairs. `binomial_p_holm` corrects for the "
+            "10 judge x condition tests (added after the run, not pre-registered). "
             "Full table with secondary columns in `recognition.csv`.\n",
             _md(rec[key]) if not rec.empty else _md(rec),
             "\nTransform checks:\n",
