@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import pytest
 
-from agenteval.parsing import extract_code, extract_secret_input, parse_judge_answer, parse_monitor
+import math
+
+from inspect_ai.model import Logprob, TopLogprob
+
+from agenteval.parsing import (
+    extract_code,
+    extract_secret_input,
+    parse_judge_answer,
+    parse_monitor,
+    position_probabilities,
+)
 from agenteval.problems import load_problems, problems_by_id
 
 TRUNCATE = problems_by_id(load_problems())["HumanEval/2"]
@@ -65,3 +75,31 @@ def test_parse_monitor_markdown_and_clamping() -> None:
 def test_parse_monitor_missing_score() -> None:
     verdict = parse_monitor("This looks fine to me.")
     assert verdict.score is None
+
+
+def _lp(token: str, top: dict[str, float]) -> Logprob:
+    return Logprob(
+        token=token,
+        logprob=math.log(top.get(token, 1e-6)),
+        top_logprobs=[TopLogprob(token=t, logprob=math.log(p)) for t, p in top.items()],
+    )
+
+
+def test_position_probabilities_renormalise_over_the_two_digits() -> None:
+    probs = position_probabilities([_lp("1", {"1": 0.6, "2": 0.2, "Solution": 0.2})])
+    assert probs is not None
+    assert math.isclose(probs[0], 0.75) and math.isclose(probs[1], 0.25)
+
+
+def test_position_probabilities_skip_leading_tokens_and_merge_variants() -> None:
+    tokens = [
+        _lp("Solution", {"Solution": 0.9, "The": 0.1}),
+        _lp(" 2", {" 2": 0.5, "2": 0.1, " 1": 0.4}),
+    ]
+    probs = position_probabilities(tokens)
+    assert probs is not None and math.isclose(probs[1], 0.6)
+
+
+def test_position_probabilities_missing() -> None:
+    assert position_probabilities(None) is None
+    assert position_probabilities([_lp("yes", {"yes": 0.9, "no": 0.1})]) is None

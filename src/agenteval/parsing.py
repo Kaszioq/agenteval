@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import math
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from agenteval.problems import Problem
 
@@ -50,6 +53,30 @@ def parse_judge_answer(response: str) -> int | None:
     text = response.strip()
     match = _DIGIT.search(text)
     return int(match.group(1)) if match else None
+
+
+def _digit(token: str) -> str:
+    return token.strip().strip("\"'`*.").strip()
+
+
+def position_probabilities(tokens: Sequence[Any] | None) -> tuple[float, float] | None:
+    """P("1") and P("2"), renormalised over the two, at the first answer position.
+
+    ``tokens`` are Inspect ``Logprob`` entries (``token``, ``logprob``,
+    ``top_logprobs``). The answer position is the first generated token whose
+    top alternatives include "1" or "2". Returns None when no such position exists.
+    """
+    for entry in tokens or []:
+        candidates = list(entry.top_logprobs or []) or [entry]
+        mass = {"1": 0.0, "2": 0.0}
+        for alt in candidates:
+            digit = _digit(alt.token)
+            if digit in mass:
+                mass[digit] += math.exp(alt.logprob)
+        total = mass["1"] + mass["2"]
+        if total > 0:
+            return mass["1"] / total, mass["2"] / total
+    return None
 
 
 @dataclass(frozen=True)

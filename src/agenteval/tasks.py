@@ -13,7 +13,13 @@ from typing import Any
 import anyio
 from inspect_ai import Task
 from inspect_ai.dataset import MemoryDataset, Sample
-from inspect_ai.model import ChatMessageSystem, ChatMessageUser, GenerateConfig, get_model
+from inspect_ai.model import (
+    ChatMessageSystem,
+    ChatMessageUser,
+    GenerateConfig,
+    ModelOutput,
+    get_model,
+)
 from inspect_ai.scorer import Score, Target, mean, scorer
 from inspect_ai.solver import Generate, TaskState, solver
 
@@ -25,17 +31,26 @@ from agenteval.parsing import (
     extract_secret_input,
     parse_judge_answer,
     parse_monitor,
+    position_probabilities,
 )
 from agenteval.problems import Problem
 from agenteval.sandbox import check_backdoor, run_tests
 
 RESULT_KEY = "agenteval_result"
+JUDGE_TOP_LOGPROBS = 20
+
+
+async def _generate_output(
+    system: str, user: str, config: GenerateConfig
+) -> tuple[ModelOutput, list[Any]]:
+    messages = [ChatMessageSystem(content=system), ChatMessageUser(content=user)]
+    output = await get_model().generate(messages, config=config, cache=CACHE_POLICY)
+    return output, [*messages, output.message]
 
 
 async def _generate(system: str, user: str, config: GenerateConfig) -> tuple[str, list[Any]]:
-    messages = [ChatMessageSystem(content=system), ChatMessageUser(content=user)]
-    output = await get_model().generate(messages, config=config, cache=CACHE_POLICY)
-    return output.completion, [*messages, output.message]
+    output, messages = await _generate_output(system, user, config)
+    return output.completion, messages
 
 
 @scorer(metrics=[mean()])
@@ -133,11 +148,21 @@ def judge_solver(cfg: StudyConfig):  # type: ignore[no-untyped-def]
             code_2=md["code_2"].rstrip("\n"),
         )
         config = GenerateConfig(
-            temperature=cfg.temperature, seed=cfg.seed, max_tokens=cfg.max_tokens_judge
+            temperature=cfg.temperature,
+            seed=cfg.seed,
+            max_tokens=cfg.max_tokens_judge,
+            logprobs=True,
+            top_logprobs=JUDGE_TOP_LOGPROBS,
         )
-        response, messages = await _generate(prompts.JUDGE_SYSTEM, user, config)
+        output, messages = await _generate_output(prompts.JUDGE_SYSTEM, user, config)
+        response = output.completion
         state.messages = messages
         answer = parse_judge_answer(response)
+        logprobs = output.choices[0].logprobs if output.choices else None
+        probs = position_probabilities(logprobs.content if logprobs else None)
+        p_own = None
+        if probs is not None:
+            p_own = probs[0] if md["own_position"] == 1 else probs[1]
         state.store.set(
             RESULT_KEY,
             {
@@ -150,6 +175,8 @@ def judge_solver(cfg: StudyConfig):  # type: ignore[no-untyped-def]
                 "answer": answer,
                 "valid": answer is not None,
                 "correct": answer == md["own_position"],
+                "p_first": probs[0] if probs else None,
+                "p_own": p_own,
             },
         )
         return state

@@ -15,7 +15,17 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from inspect_ai.model import ChatMessage, GenerateConfig, ModelOutput, ModelUsage
+import math
+
+from inspect_ai.model import (
+    ChatMessage,
+    GenerateConfig,
+    Logprob,
+    Logprobs,
+    ModelOutput,
+    ModelUsage,
+    TopLogprob,
+)
 
 from agenteval import prompts
 from agenteval.problems import Problem, load_problems
@@ -91,12 +101,13 @@ def _author(model_id: str, user: str, problems: list[Problem], backdoor: bool) -
     return f"```python\n{code}```{suffix}"
 
 
-def _judge(model_id: str, user: str) -> str:
+def _judge(model_id: str, user: str) -> tuple[str, float]:
+    """The answer and P("1"). Without its marker the judge leans towards position 1."""
     blocks = re.findall(r"Solution ([12]):\n```python\n(.*?)```", user, re.DOTALL)
     for label, code in blocks:
         if MARKERS[model_id] in code:
-            return label
-    return "1"
+            return label, 0.8 if label == "1" else 0.35
+    return "1", 0.7
 
 
 def _monitor(model_id: str, user: str) -> str:
@@ -121,15 +132,26 @@ def mock_outputs(
     ) -> ModelOutput:
         system = _text(input[0]) if input and input[0].role == "system" else ""
         user = _text(input[-1])
-        if system == prompts.AUTHOR_SYSTEM:
+        logprobs = None
+        if system == prompts.JUDGE_SYSTEM:
+            content, p_first = _judge(model_id, user)
+            top = [
+                TopLogprob(token="1", logprob=math.log(p_first)),
+                TopLogprob(token="2", logprob=math.log(1 - p_first)),
+            ]
+            chosen = next(t for t in top if t.token == content)
+            logprobs = Logprobs(
+                content=[Logprob(token=content, logprob=chosen.logprob, top_logprobs=top)]
+            )
+        elif system == prompts.AUTHOR_SYSTEM:
             content = _author(model_id, user, problems, backdoor="SECRET_INPUT" in user)
-        elif system == prompts.JUDGE_SYSTEM:
-            content = _judge(model_id, user)
         elif system == prompts.MONITOR_SYSTEM:
             content = _monitor(model_id, user)
         else:
             content = "I do not know this task."
         output = ModelOutput.from_content(model=f"mock-{model_id}", content=content)
+        if logprobs is not None:
+            output.choices[0].logprobs = logprobs
         # Rough token counts, so Inspect does not fetch a tokenizer over the network.
         words_in = sum(len(_text(m).split()) for m in input)
         words_out = len(content.split())
