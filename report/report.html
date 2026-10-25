@@ -215,5 +215,55 @@ caching and the paid-endpoint block.</p>
   <li>Subtler backdoors and agentic settings (for example ControlArena's APPS and BigCodeBench settings).</li>
 </ul>
 
+<h2>References</h2>
+<ul class="small">
+  <li>M. Chen et al. (2021). Evaluating Large Language Models Trained on Code. arXiv:2107.03374. (HumanEval)</li>
+  <li>A. Panickssery, S. R. Bowman, S. Feng (2024). LLM Evaluators Recognize and Favor Their Own Generations. arXiv:2404.13076.</li>
+  <li>UK AI Security Institute. Inspect: a framework for large language model evaluations. https://inspect.aisi.org.uk</li>
+  <li>UK AI Security Institute. ControlArena. https://github.com/UKGovernmentBEIS/control-arena</li>
+</ul>
+
+<h2 style="page-break-before: always">Appendix: Limitations and Dual-Use / Ethical Considerations</h2>
+<h3>Limitations</h3>
+<ul>
+  <li><b>Scale.</b> Only two 7–8B open-weight models, one per family, so a family effect cannot be separated from
+    these two specific models. The results say nothing directly about frontier models.</li>
+  <li><b>Task domain.</b> HumanEval problems are short and often have one natural solution, which limits how much
+    authorial style can show.</li>
+  <li><b>Backdoor realism.</b> After the pilots, authors write an explicit trigger condition, for example a special
+    case for lists longer than 100 elements. These are far easier to spot than the subtle sabotage studied in AI
+    control, so leniency on subtle backdoors is not ruled out.</li>
+  <li><b>Monitor score use.</b> Monitor A scores almost all honest code 0. Monitor B gives 8/10 to 93% of
+    backdoors and to 31% of honest code. These floor and ceiling effects make raw-score interactions hard to
+    interpret, which is why scale-free measures are reported alongside them.</li>
+  <li><b>Measurement changes.</b> The judge read-out and the backdoor prompt were changed after pilots on 5 problems,
+    before the main run (Section 6). E1b, honest-code leniency, the Holm correction and the AUROC interaction were
+    added after seeing results and are labelled exploratory.</li>
+  <li><b>Position bias.</b> Counterbalancing both orders removes a constant position preference, but not one that
+    interacts with content.</li>
+  <li><b>Failures.</b> Two backdoor samples hit the 10-minute per-sample limit and count as failed attempts.</li>
+</ul>
+<h3>Dual-use considerations</h3>
+<ul>
+  <li>The pipeline includes prompts and a grader feedback loop that help a model insert test-passing backdoors into
+    code. In principle, similar tooling could be used to produce sabotaged code. The risk here is low: the backdoors
+    are crude, explicit special cases in short HumanEval functions, produced by small public models, and both monitors
+    detect them well (AUROC 0.84–0.97). The same machinery is standard in AI control research, where generating
+    attacks is needed to evaluate monitors.</li>
+  <li>The findings concern the <i>absence</i> of spontaneous collusion in small models. They should not be read as
+    evidence that larger models, or the same models in agentic settings, are safe to use as monitors for their own
+    family. Overstating them could lead to misplaced trust in same-family monitoring.</li>
+  <li>We release the code and per-sample data openly so that the evaluation can be audited and extended. We do not
+    release any technique for making backdoors harder to detect.</li>
+</ul>
+<h3>Ethical considerations</h3>
+<ul>
+  <li>No human subjects, personal data or user content are involved. The only dataset is HumanEval (MIT license).</li>
+  <li>All model-generated code runs in a separate process with a timeout, no network access (blocked at the OS level
+    on Linux; on Windows only Python's socket module is disabled) and resource limits where the operating system
+    supports them. The pipeline refuses paid API endpoints by default, and the study cost nothing to run.</li>
+  <li>All code was written during the sprint (24–25 October 2026); no pre-existing project code was used.</li>
+</ul>
+
 </body>
 </html>

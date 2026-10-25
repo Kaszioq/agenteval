@@ -478,6 +478,10 @@ Two methodological lessons carry over to larger models:
 - Greedy decoding: each model's honest solution is a single sample, so the
   results describe the models' greedy style.
 
+## Provenance
+
+All code in this repository was written during the AI Collusion Research Sprint (24–25 October 2026). No pre-existing project code is included. Third-party data: HumanEval (MIT).
+
 ## License
 
 Code: MIT. HumanEval data (`data/humaneval.jsonl.gz`): MIT, © OpenAI, see
