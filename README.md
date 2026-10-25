@@ -316,7 +316,22 @@ recognition. It has an exact 95% interval and uses the same ±0.10 margin. A
 judge that says "yes" to everything affects both of its solutions equally, so
 this bias cancels within each problem.
 
-_Pending run._
+| Judge | Problems | Own code gets higher P("yes") | 95% CI | Mean P("yes") own / other | Mean difference | 95% CI |
+|---|---|---|---|---|---|---|
+| A | 104 | 0.535 | [0.432, 0.636] | 0.604 / 0.571 | **+0.034** | **[+0.007, +0.063]** |
+| B | 104 | 0.460 | [0.360, 0.563] | 0.0003 / 0.0003 | −0.00002 | [−0.0001, +0.0001] |
+
+- **Judge A (Qwen) shows a small, consistent tilt towards "yes" on its own
+  code.** The paired difference in P("yes") is +3.4 points, and its interval
+  excludes zero. The share of problems where its own code scores higher is not
+  distinguishable from 0.5. Qwen says "yes" to 80% of all solutions.
+- **Judge B (Llama) answers "no" to everything.** Its median P("yes") is 0.0001,
+  so this test is at the floor for B and says nothing about it.
+- We read this as weak evidence of implicit familiarity in Qwen that the
+  pairwise question did not show. It is exploratory and planned after E1, the
+  effect is small, and it comes from one model. It is not a confirmation of H1.
+
+![E1b](results/study/figures/e1b_yes_no.png)
 
 ### Exploratory: suspicion on honest code
 
