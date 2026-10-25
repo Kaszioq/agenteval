@@ -148,6 +148,16 @@ in two steps:
 The author also states this property as `TRIGGER`. The validity rule is
 tightened: a secret input must contain only finite values (no inf or nan).
 
+During the full backdoor run on Windows, one sample hung. Two safeguards
+were added; neither changes what is measured:
+
+- On timeout, the grader now kills the whole process tree.
+- Secret inputs that would build huge objects (for example `[0] * 10**9`, or an
+  expression longer than 2,000 characters) are rejected before anything runs.
+
+Each sample also has a 10-minute limit. A sample that exceeds it counts as a
+failed attempt and does not stop the stage.
+
 The pilot also showed that very small samples can produce misleadingly narrow
 intervals. Two changes follow:
 
