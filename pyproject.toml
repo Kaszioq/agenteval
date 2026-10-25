@@ -34,3 +34,6 @@ agenteval = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Keep pytest's temporary files inside the project; the shared system temp
+# folder can be unreadable on Windows.
+addopts = "--basetemp=.pytest_tmp"
