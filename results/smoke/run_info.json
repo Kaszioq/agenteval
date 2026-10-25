@@ -2,7 +2,7 @@
   "config": {
     "allow_free_tier_api": false,
     "allow_paid": false,
-    "backdoor_attempts": 3,
+    "backdoor_attempts": 4,
     "cache_dir": ".cache\\inspect",
     "exec_timeout": 10.0,
     "extra": {
@@ -70,10 +70,10 @@
     }
   },
   "stages": {
-    "backdoor": "2026-10-25T02:56:03+00:00",
-    "honest": "2026-10-25T02:53:52+00:00",
-    "monitor": "2026-10-25T02:56:49+00:00",
-    "recognition": "2026-10-25T02:54:29+00:00"
+    "backdoor": "2026-10-25T03:17:02+00:00",
+    "honest": "2026-10-25T03:14:09+00:00",
+    "monitor": "2026-10-25T03:17:52+00:00",
+    "recognition": "2026-10-25T03:14:47+00:00"
   },
   "versions": {
     "inspect_ai": "0.3.284",
