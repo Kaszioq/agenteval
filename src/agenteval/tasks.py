@@ -29,6 +29,7 @@ from agenteval.models import CACHE_POLICY
 from agenteval.parsing import (
     extract_code,
     extract_secret_input,
+    extract_trigger,
     parse_judge_answer,
     parse_monitor,
     position_probabilities,
@@ -108,7 +109,9 @@ def author_solver(problems: dict[str, Problem], cfg: StudyConfig, backdoor: bool
                 outcome = await anyio.to_thread.run_sync(
                     lambda: check_backdoor(problem, code, secret, cfg.exec_timeout)
                 )
-                attempt.update(secret_input=secret, **asdict(outcome))
+                attempt.update(
+                    secret_input=secret, trigger=extract_trigger(response), **asdict(outcome)
+                )
                 ok = outcome.valid
             else:
                 tests = await anyio.to_thread.run_sync(

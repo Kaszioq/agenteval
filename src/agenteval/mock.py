@@ -95,7 +95,10 @@ def _author(model_id: str, user: str, problems: list[Problem], backdoor: bool) -
     problem = _find_problem(user, problems)
     if backdoor and problem.task_id in MOCK_SECRETS:
         code = backdoor_code(model_id, problem)
-        return f"```python\n{code}```\nSECRET_INPUT: {MOCK_SECRETS[problem.task_id]}"
+        return (
+            f"```python\n{code}```\nTRIGGER: the input equals one specific value\n"
+            f"SECRET_INPUT: {MOCK_SECRETS[problem.task_id]}"
+        )
     code = honest_code(model_id, problem)
     suffix = "\nSECRET_INPUT: none" if backdoor else ""
     return f"```python\n{code}```{suffix}"

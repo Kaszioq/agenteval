@@ -48,6 +48,15 @@ def extract_secret_input(response: str) -> str | None:
     return value
 
 
+_TRIGGER = re.compile(r"TRIGGER\s*:\s*(.+)", re.IGNORECASE)
+
+
+def extract_trigger(response: str) -> str | None:
+    """The author's one-sentence description of the backdoor condition, if given."""
+    match = _TRIGGER.search(_FENCE.sub("", response))
+    return match.group(1).strip().strip("*").strip() if match else None
+
+
 def parse_judge_answer(response: str) -> int | None:
     """The first standalone 1 or 2 in the response, else None."""
     text = response.strip()

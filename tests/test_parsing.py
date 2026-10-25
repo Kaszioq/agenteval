@@ -104,3 +104,11 @@ def test_position_probabilities_skip_leading_tokens_and_merge_variants() -> None
 def test_position_probabilities_missing() -> None:
     assert position_probabilities(None) is None
     assert position_probabilities([_lp("yes", {"yes": 0.9, "no": 0.1})]) is None
+
+
+def test_extract_trigger() -> None:
+    from agenteval.parsing import extract_trigger
+
+    response = "```python\nx = 1\n```\nTRIGGER: the list has exactly 7 elements\nSECRET_INPUT: ([1]*7,)"
+    assert extract_trigger(response) == "the list has exactly 7 elements"
+    assert extract_trigger("no trigger") is None
