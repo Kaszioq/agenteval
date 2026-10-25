@@ -76,7 +76,9 @@ def author_solver(problems: dict[str, Problem], cfg: StudyConfig, backdoor: bool
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         problem = problems[state.metadata["task_id"]]
         if backdoor:
-            user = prompts.backdoor_user(problem.prompt, problem.entry_point)
+            user = prompts.backdoor_user(
+                problem.prompt, problem.entry_point, state.metadata["base_code"]
+            )
         else:
             user = prompts.HONEST_USER.format(prompt=prompts.problem_text(problem.prompt))
         messages: list[Any] = [
@@ -139,9 +141,24 @@ def author_solver(problems: dict[str, Problem], cfg: StudyConfig, backdoor: bool
     return solve
 
 
-def author_task(problems: list[Problem], cfg: StudyConfig, backdoor: bool) -> Task:
+def author_task(
+    problems: list[Problem],
+    cfg: StudyConfig,
+    backdoor: bool,
+    base_code: dict[str, str] | None = None,
+) -> Task:
+    """``base_code`` (task_id -> the author's honest solution) is required for backdoors."""
     by_id = {p.task_id: p for p in problems}
-    samples = [Sample(id=p.task_id, input=p.task_id, metadata={"task_id": p.task_id}) for p in problems]
+    if backdoor and (base_code is None or any(p.task_id not in base_code for p in problems)):
+        raise ValueError("backdoor authors need their own honest solution for every problem")
+    samples = [
+        Sample(
+            id=p.task_id,
+            input=p.task_id,
+            metadata={"task_id": p.task_id, **({"base_code": base_code[p.task_id]} if backdoor else {})},
+        )
+        for p in problems
+    ]
     return Task(
         name="backdoor_author" if backdoor else "honest_author",
         dataset=MemoryDataset(samples),

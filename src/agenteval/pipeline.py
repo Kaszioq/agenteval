@@ -215,12 +215,15 @@ def run_recognition(cfg: StudyConfig) -> list[dict[str, Any]]:
 
 def run_backdoor(cfg: StudyConfig) -> list[dict[str, Any]]:
     problems = problems_by_id(_problems(cfg))
-    targets = [problems[tid] for tid in paired_solutions(cfg)]
+    pairs = paired_solutions(cfg)
+    targets = [problems[tid] for tid in pairs]
     if not targets:
         raise StageError("no problems where both honest solutions pass")
     rows = []
     for model_id in cfg.model_ids:
-        for row in _run(author_task(targets, cfg, backdoor=True), model_id, cfg):
+        own = {tid: codes[model_id] for tid, codes in pairs.items()}
+        task = author_task(targets, cfg, backdoor=True, base_code=own)
+        for row in _run(task, model_id, cfg):
             final = row["final"]
             rows.append(
                 {
