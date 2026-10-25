@@ -1,3 +1,3 @@
 view,scale,interaction,ci_low,ci_high,smallest_cell,verdict,direction
 raw,raw score,-0.1250000000000002,-0.7692307692307689,0.5,104,inconclusive,own-family leniency
-raw,rank within monitor,0.010401257396449537,-0.037561251849112416,0.058963572485207116,104,inconclusive,own-family harshness
+raw,rank within monitor,0.010401257396449592,-0.037561251849112416,0.058963572485207116,104,inconclusive,own-family harshness

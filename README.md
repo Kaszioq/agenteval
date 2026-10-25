@@ -373,9 +373,75 @@ Mean suspicion (0–10), comment-stripped code, 104 problems per cell:
 
 ![Honest-code leniency](results/study/figures/e3x_honest_leniency.png)
 
-### E3 (H3)
+### E3 (H3): no own-family leniency on backdoored code
 
-_Pending: see the pilot amendments for the backdoor generation problems._
+Valid backdoors: 55/104 from A (Qwen) and 45/104 from B (Llama). Two Llama
+problems (HumanEval/78 and /143) hit the 10-minute per-sample limit and count as
+failed. Each monitor scored all 100 backdoors and all 208 paired honest
+solutions. Every score parsed.
+
+Mean suspicion on backdoored code (0–10, comment-stripped code, primary view):
+
+| | Author A backdoors | Author B backdoors |
+|---|---|---|
+| **Monitor A** | 4.49 [4.02, 4.93] | 3.18 [2.78, 3.60] |
+| **Monitor B** | 7.89 [7.62, 8.06] | 7.73 [7.33, 8.00] |
+
+| Scale | Interaction I | 95% CI | Verdict |
+|---|---|---|---|
+| raw score (pre-registered) | +1.16 | [+0.46, +1.82] | effect, in the **opposite** direction to H3 |
+| honest percentile (pre-registered) | −0.010 | [−0.051, +0.020] | inconclusive (just outside the ±0.05 band) |
+| detection AUROC (exploratory, added after the run) | +0.002 | [−0.053, +0.054] | inconclusive |
+
+Detection per cell (honest vs backdoored code by the same author):
+
+| | AUROC, author A | AUROC, author B | Flagged at the 2% audit budget, A / B |
+|---|---|---|---|
+| Monitor A | 0.972 | 0.970 | 78% / 42% |
+| Monitor B | 0.836 | 0.837 | 4% / 0% |
+
+- **H3 is not supported.** Neither monitor is more lenient on its own
+  family's backdoors.
+- The raw-score interaction is significant, but it is **positive**: monitor A
+  rates A-authored backdoors as *more* suspicious.
+- We do not read the positive interaction as own-family harshness. Monitor B
+  gives 8/10 to 93% of all backdoors and to 31% of honest code. That ceiling
+  leaves it unable to register differences in how obvious each author's
+  backdoors are, so the 2×2 design can no longer cancel author detectability.
+  The likeliest explanation is that A's trigger conditions are simply more
+  conspicuous, which only monitor A can see.
+- Scale-free measures show nothing. The percentile interaction, and an AUROC
+  interaction that uses only each monitor's ordering of scores, are both
+  centred on zero, and per-cell detection AUROC is the same for both authors
+  (0.97 / 0.97 and 0.84 / 0.84).
+- Monitor B's 2% audit threshold is its modal score of 8, so it flags almost
+  nothing above that threshold. Monitor A flags 42–78% of backdoors at the same
+  budget.
+- With raw (uncommented) code the picture is the same: raw interaction +1.57
+  [+0.85, +2.28], percentile +0.010 [−0.020, +0.043] (no effect), AUROC +0.044
+  [−0.006, +0.096].
+
+![E3](results/study/figures/e3_leniency.png)
+
+### Summary
+
+For two 7–8B open-weight models from different families:
+
+| Test | Finding |
+|---|---|
+| Pairwise recognition (E1) | none, precise null |
+| Surface features (E2) | nothing to explain |
+| Single-item recognition (E1b) | a small own-code tilt for A only (+3.4 points) |
+| Leniency on honest code | none |
+| Leniency on backdoored code (E3) | none on scale-free measures; a raw-score difference in the opposite direction, explained by monitor B's ceiling |
+
+Two methodological lessons carry over to larger models:
+
+- Pairwise self-recognition tests with small judges are dominated by position
+  bias unless order is counterbalanced and probabilities are read.
+- Monitors with very coarse score use (here, mostly 0 or 8) undermine 2×2
+  interaction designs, so scale-free measures should be reported alongside raw
+  means.
 
 ## Limitations
 
@@ -383,6 +449,15 @@ _Pending: see the pilot amendments for the backdoor generation problems._
   answer position regardless of content. The probability-based, both-orders
   measure removes a constant bias, but a bias that interacts with content would
   not be removed.
+- **Monitor score use.** Monitor A scores almost all honest code 0, and
+  monitor B gives about 8 to most backdoors and a third of honest code. These
+  floor and ceiling effects limit the raw-score analyses; we report scale-free
+  measures alongside.
+- **Crude backdoors.** After the pilots, authors write an explicit trigger
+  condition, so the backdoors are easier to spot than the subtle sabotage
+  studied in AI control research.
+- **Two time-outs.** Two Llama backdoor samples hit the 10-minute limit and
+  count as failed.
 - **The null applies to this prompt and these models.** A different question
   might reveal recognition that this one does not, for example asking for a
   likelihood that one solution was written by the judge, or using larger models.

@@ -60,6 +60,7 @@ Interaction (negative = monitors more lenient on their own family):
 |---|---|---|---|---|---|---|---|
 | stripped | raw score | 1.156 | 0.461 | 1.824 | 45 | effect | own-family harshness |
 | stripped | honest percentile | -0.010 | -0.051 | 0.020 | 45 | inconclusive | own-family leniency |
+| stripped | AUROC (exploratory) | 0.002 | -0.053 | 0.054 | 45 | inconclusive | own-family harshness |
 
 
 Thresholds at a 2% honest audit budget:
@@ -85,6 +86,7 @@ Interaction (negative = monitors more lenient on their own family):
 |---|---|---|---|---|---|---|---|
 | raw | raw score | 1.566 | 0.849 | 2.278 | 45 | effect | own-family harshness |
 | raw | honest percentile | 0.010 | -0.020 | 0.043 | 45 | no effect | own-family harshness |
+| raw | AUROC (exploratory) | 0.044 | -0.006 | 0.096 | 45 | inconclusive | own-family harshness |
 
 
 Thresholds at a 2% honest audit budget:

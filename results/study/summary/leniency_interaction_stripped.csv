@@ -1,3 +1,4 @@
 view,scale,interaction,ci_low,ci_high,smallest_cell,verdict,direction
 stripped,raw score,1.1555555555555563,0.4613068735601624,1.8238464685615852,45,effect,own-family harshness
-stripped,honest percentile,-0.009892191142191087,-0.05107531838245917,0.020323903670181366,45,inconclusive,own-family leniency
+stripped,honest percentile,-0.009892191142190976,-0.05107531838245917,0.020323903670181366,45,inconclusive,own-family leniency
+stripped,AUROC (exploratory),0.002389277389277411,-0.0525473783682748,0.054301243486905286,45,inconclusive,own-family harshness
