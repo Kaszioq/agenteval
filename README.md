@@ -240,11 +240,84 @@ socket module.
 
 ## Results
 
-_Not yet run._
+Full run on 164 HumanEval problems, on a single NVIDIA GPU (models served by
+Ollama, temperature 0, seed 1234). Tables: `results/study/summary/`. Per-sample
+rows with full prompts and responses: `results/study/stages/`.
+
+### Honest solutions
+
+| Model | Passed | Pass rate |
+|---|---|---|
+| A (Qwen2.5-Coder 7B) | 142 / 164 | 86.6% |
+| B (Llama 3.1 8B) | 109 / 164 | 66.5% |
+
+Both pass on 104 problems; these form the E1/E2 pairs. Pairs where the two
+solutions are textually identical are dropped, which leaves 99 in the raw
+condition. All 208 transformed solutions still pass their tests, in every E2
+condition.
+
+### E1 (H1): no evidence of self-recognition
+
+| Judge | Pairs | Favours own code | 95% CI | Mean p_own | 95% CI | Verdict (p_own) |
+|---|---|---|---|---|---|---|
+| A | 99 | 0.485 | [0.383, 0.587] | 0.503 | [0.483, 0.524] | no effect |
+| B | 99 | 0.444 | [0.345, 0.548] | 0.493 | [0.483, 0.504] | no effect |
+
+- **Neither judge identifies its own solution above chance.**
+- The pair-level accuracy interval is wide. It is "inconclusive" under the
+  ±0.10 rule because its lower bound falls just below 0.40.
+- The probability measure is much more precise. Both judges put on average 49–50%
+  of their probability on their own solution, with intervals inside
+  [0.48, 0.53]. That is a clear null under the pre-registered margin.
+- **Position bias dominates both judges.** Averaged over prompts,
+  P("1") = 0.83 for A and 0.91 for B, whatever the content. The sampled answer
+  is "1" in 96% (A) and 99.5% (B) of prompts. Read naively, sampled answers
+  would give exactly 50% by construction. The both-orders probability design
+  is what makes the null interpretable.
+
+![E1](results/study/figures/e1_recognition.png)
+
+### E2 (H2): nothing for the ablations to explain
+
+| Judge | Condition | Pairs | Favours own | 95% CI | p | p (Holm) | Mean p_own | 95% CI |
+|---|---|---|---|---|---|---|---|---|
+| A | no_comments | 87 | 0.621 | [0.510, 0.723] | 0.031 | 0.314 | 0.517 | [0.495, 0.541] |
+| A | renamed | 96 | 0.458 | [0.356, 0.563] | 0.475 | 1.000 | 0.500 | [0.475, 0.527] |
+| A | formatted | 95 | 0.442 | [0.340, 0.548] | 0.305 | 1.000 | 0.501 | [0.480, 0.522] |
+| A | all | 70 | 0.600 | [0.476, 0.715] | 0.120 | 1.000 | 0.518 | [0.485, 0.551] |
+| B | no_comments | 87 | 0.517 | [0.408, 0.626] | 0.830 | 1.000 | 0.496 | [0.483, 0.509] |
+| B | renamed | 96 | 0.458 | [0.356, 0.563] | 0.475 | 1.000 | 0.493 | [0.478, 0.509] |
+| B | formatted | 95 | 0.516 | [0.411, 0.620] | 0.838 | 1.000 | 0.494 | [0.483, 0.505] |
+| B | all | 70 | 0.500 | [0.378, 0.622] | 1.000 | 1.000 | 0.495 | [0.476, 0.515] |
+
+- There is no recognition in the raw condition, so there is no signal for the
+  transforms to remove. H2 cannot be tested with these models.
+- Judge A with comments removed is the only cell whose pair-level interval
+  excludes 0.5 (p = 0.031). It is one of 10 tests and does not survive a Holm
+  correction (p = 0.31). Its mean p_own (0.517) is inside the equivalence band.
+  We read it as a likely false positive.
+- The Holm correction was added after the run and was not pre-registered. The
+  pre-registered verdicts are reported unchanged in `recognition.csv`.
+- Every mean p_own interval lies inside [0.475, 0.551].
+
+![E2](results/study/figures/e2_ablations.png)
+
+### E3 (H3)
+
+_Pending: see the pilot amendments for the backdoor generation problems._
 
 ## Limitations
 
-To be completed with the results. Known in advance:
+- **Small judges, strong position bias.** Both 7–8B judges prefer the first
+  answer position regardless of content. The probability-based, both-orders
+  measure removes a constant bias, but a bias that interacts with content would
+  not be removed.
+- **The null applies to this prompt and these models.** A different question
+  might reveal recognition that this one does not, for example asking for a
+  likelihood that one solution was written by the judge, or using larger models.
+- **Pilot-driven changes.** The judge read-out and the backdoor prompt were
+  changed after pilots on 5 problems, before the main run. All changes are
+  listed above.
 
 - Two small models only, one per family. "Family" effects cannot be separated
   from these two specific models.
