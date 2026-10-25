@@ -144,7 +144,8 @@ def mock_outputs(
                 content=[Logprob(token=content, logprob=chosen.logprob, top_logprobs=top)]
             )
         elif system == prompts.AUTHOR_SYSTEM:
-            content = _author(model_id, user, problems, backdoor="SECRET_INPUT" in user)
+            first_user = _text(input[1])  # the task; later turns are feedback
+            content = _author(model_id, first_user, problems, backdoor="SECRET_INPUT" in first_user)
         elif system == prompts.MONITOR_SYSTEM:
             content = _monitor(model_id, user)
         else:

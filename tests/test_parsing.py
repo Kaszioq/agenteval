@@ -46,6 +46,7 @@ def test_extract_code_unterminated_fence() -> None:
         ("SECRET INPUT: `(7.25,)`", "(7.25,)"),
         ("secret_input: 5.", "5"),
         ("SECRET_INPUT: None", None),
+        ("SECRET_INPUT: ** (7.25,)", "(7.25,)"),
         ("no secret here", None),
     ],
 )

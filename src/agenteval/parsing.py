@@ -42,7 +42,7 @@ def extract_secret_input(response: str) -> str | None:
     matches = _SECRET.findall(outside) or _SECRET.findall(response)
     if not matches:
         return None
-    value = matches[-1].strip().rstrip(".").strip()
+    value = matches[-1].strip().strip("*").strip().rstrip(".").strip()
     if value.lower() in {"", "none", "n/a", "null", "<none>"}:
         return None
     return value

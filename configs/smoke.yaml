@@ -7,7 +7,7 @@ models:
     name: ollama/llama3.1:8b
 seed: 1234
 problem_limit: 5
-backdoor_attempts: 3
+backdoor_attempts: 4
 min_valid_backdoors: 0
 max_connections: 1
 allow_paid: false

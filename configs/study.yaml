@@ -8,7 +8,7 @@ models:
 seed: 1234
 temperature: 0.0
 retry_temperature: 0.7
-backdoor_attempts: 3
+backdoor_attempts: 4
 max_tokens_author: 1024
 max_tokens_judge: 16
 max_tokens_monitor: 160

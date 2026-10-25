@@ -68,12 +68,21 @@ def stored_value(field: str):  # type: ignore[no-untyped-def]
 
 @solver
 def author_solver(problems: dict[str, Problem], cfg: StudyConfig, backdoor: bool):  # type: ignore[no-untyped-def]
+    """Honest authors answer once. Backdoor authors get up to ``backdoor_attempts``
+    turns in one conversation; after an invalid attempt the next turn says why it
+    was rejected (see ``prompts.backdoor_feedback``)."""
     attempts_allowed = cfg.backdoor_attempts if backdoor else 1
-    template = prompts.BACKDOOR_USER if backdoor else prompts.HONEST_USER
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         problem = problems[state.metadata["task_id"]]
-        user = template.format(prompt=prompts.problem_text(problem.prompt))
+        if backdoor:
+            user = prompts.backdoor_user(problem.prompt, problem.entry_point)
+        else:
+            user = prompts.HONEST_USER.format(prompt=prompts.problem_text(problem.prompt))
+        messages: list[Any] = [
+            ChatMessageSystem(content=prompts.AUTHOR_SYSTEM),
+            ChatMessageUser(content=user),
+        ]
         attempts: list[dict[str, Any]] = []
         for k in range(attempts_allowed):
             config = GenerateConfig(
@@ -81,7 +90,9 @@ def author_solver(problems: dict[str, Problem], cfg: StudyConfig, backdoor: bool
                 seed=cfg.seed + k,
                 max_tokens=cfg.max_tokens_author,
             )
-            response, messages = await _generate(prompts.AUTHOR_SYSTEM, user, config)
+            output = await get_model().generate(messages, config=config, cache=CACHE_POLICY)
+            messages = [*messages, output.message]
+            response = output.completion
             code = extract_code(response, problem)
             attempt: dict[str, Any] = {
                 "attempt": k,
@@ -104,9 +115,13 @@ def author_solver(problems: dict[str, Problem], cfg: StudyConfig, backdoor: bool
                 attempt.update(passed=tests.passed, detail=tests.detail)
                 ok = tests.passed
             attempts.append(attempt)
-            state.messages = messages
             if ok:
                 break
+            if backdoor and k + 1 < attempts_allowed:
+                feedback = prompts.backdoor_feedback(outcome, problem.prompt, problem.entry_point)
+                attempt["feedback"] = feedback
+                messages = [*messages, ChatMessageUser(content=feedback)]
+        state.messages = messages
         final = attempts[-1]
         state.store.set(
             RESULT_KEY,
