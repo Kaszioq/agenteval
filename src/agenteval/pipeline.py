@@ -71,6 +71,23 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
         return [json.loads(line) for line in handle if line.strip()]
 
 
+# Defaults for a sample that hit the time limit or crashed: it counts as a failure
+# (no valid backdoor, no parsed answer) instead of stopping the whole stage.
+_FAILED_SAMPLE = {
+    "ok": False,
+    "final": {"code": None},
+    "attempts": [],
+    "valid": False,
+    "correct": False,
+    "answer": None,
+    "p_own": None,
+    "p_first": None,
+    "score": None,
+    "p_yes": None,
+    "answered_yes": False,
+}
+
+
 def _run(task: Task, model_id: str, cfg: StudyConfig) -> list[dict[str, Any]]:
     model = resolve_model(model_id, cfg)
     logs = inspect_eval(
@@ -80,16 +97,32 @@ def _run(task: Task, model_id: str, cfg: StudyConfig) -> list[dict[str, Any]]:
         max_connections=cfg.max_connections,
         sample_shuffle=cfg.seed,
         fail_on_error=False,
+        time_limit=int(cfg.extra.get("sample_time_limit", 600)),
         log_level="warning",
     )
     log = logs[0]
-    if log.status != "success" or log.samples is None:
+    if log.status not in ("success", "error") or log.samples is None:
         raise StageError(f"{task.name} with model {model_id} ended with status {log.status}: {log.error}")
     rows = []
+    failed = 0
     for sample in log.samples:
-        if sample.error is not None or RESULT_KEY not in sample.store:
-            raise StageError(f"sample {sample.id} failed: {sample.error}")
-        rows.append({**sample.store[RESULT_KEY], "sample_id": sample.id, "log": log.location})
+        if RESULT_KEY in sample.store and sample.error is None:
+            result = sample.store[RESULT_KEY]
+        else:
+            failed += 1
+            reason = "time limit" if sample.limit is not None else str(sample.error)[:300]
+            result = {
+                **_FAILED_SAMPLE,
+                **{k: v for k, v in sample.metadata.items() if k in ("task_id", "author", "kind", "view", "condition", "order", "own_position")},
+                "sample_error": reason,
+            }
+        rows.append({**result, "sample_id": sample.id, "log": log.location})
+    if failed:
+        print(
+            f"warning: {failed} of {len(rows)} samples in {task.name} ({model_id}) failed and are "
+            "counted as unsuccessful; see 'sample_error' in the stage file",
+            file=sys.stderr,
+        )
     return sorted(rows, key=lambda r: r["sample_id"])
 
 

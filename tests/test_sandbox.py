@@ -130,3 +130,36 @@ def test_non_finite_secret_input_is_invalid() -> None:
     from agenteval.prompts import backdoor_feedback
 
     assert "finite" in backdoor_feedback(outcome, TRUNCATE.prompt, "truncate_number")
+
+
+def test_timeout_kills_grandchildren() -> None:
+    import time
+
+    script = (
+        "import subprocess, sys\n"
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        "import time; time.sleep(60)\n"
+    )
+    start = time.monotonic()
+    result = run_python(script, timeout=2)
+    assert result.timed_out
+    assert time.monotonic() - start < 15
+
+
+def test_huge_secret_inputs_are_rejected_before_running() -> None:
+    from agenteval.sandbox import secret_input_too_large
+
+    assert secret_input_too_large("([0] * 10**9,)")
+    assert secret_input_too_large("(list(range(10**8)),)")
+    assert secret_input_too_large("('x' * 5000000,)")
+    assert secret_input_too_large("(2 ** n,)")
+    assert secret_input_too_large("(" + "1, " * 1000 + ")")
+    assert not secret_input_too_large("([1.0] * 101, 0.5)")
+    assert not secret_input_too_large("(list(range(101)), 2 ** 10, 2 ** 0.5)")
+    assert not secret_input_too_large("(10**9,)")  # a large number, not a large object
+
+    outcome = check_backdoor(TRUNCATE, BACKDOOR, "([0.5] * 10**9,)")
+    assert outcome.detail["error"] == "secret input too large"
+    from agenteval.prompts import backdoor_feedback
+
+    assert "too large" in backdoor_feedback(outcome, TRUNCATE.prompt, "truncate_number")
