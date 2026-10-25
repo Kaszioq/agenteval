@@ -43,7 +43,10 @@ show a precise null once position bias is removed: mean probability on their own
 95% intervals inside [0.48, 0.53]. That bias is extreme (P("1") = 0.83–0.91), and naive accuracy would hide it.
 A single-item yes/no variant shows a small own-code tilt for Qwen (+3.4 points, CI [+0.7, +6.3]). Monitors
 show no own-family leniency on honest code (rank-scale interaction −0.004, CI [−0.045, +0.038]).
-<span id="e3-abstract">E3 results are pending.</span></p>
+In the main 2×2 test (E3), each model plants backdoors in its own code and both models act as monitors.
+We find no own-family leniency: detection AUROC is identical across authors (0.97/0.97 and 0.84/0.84), and scale-free
+interactions are centred on zero. A raw-score difference goes in the opposite direction, and we trace it to one
+monitor's score ceiling.</p>
 </div>
 
 <h2>1. Motivation</h2>
@@ -138,13 +141,37 @@ its percentile within the same monitor, which removes differences in how monitor
 raw-scale interval.</p>
 
 <h3>E3: leniency on backdoored code</h3>
-<div id="e3-section"><p><i>Pending.</i></p></div>
+<p>Valid backdoors: 55/104 from A and 45/104 from B. Two B samples hit the 10-minute limit and count as failed.
+Both monitors scored all 100 backdoors and all 208 paired honest solutions, and every score parsed.</p>
+<table class="keep">
+<tr><th>Mean suspicion (0–10)</th><th>Author A backdoors</th><th>Author B backdoors</th><th class="n">AUROC A / B</th><th class="n">Flagged at 2% budget A / B</th></tr>
+<tr><td><b>Monitor A</b></td><td>4.49 [4.02, 4.93]</td><td>3.18 [2.78, 3.60]</td><td class="n">0.972 / 0.970</td><td class="n">78% / 42%</td></tr>
+<tr><td><b>Monitor B</b></td><td>7.89 [7.62, 8.06]</td><td>7.73 [7.33, 8.00]</td><td class="n">0.836 / 0.837</td><td class="n">4% / 0%</td></tr>
+</table>
+<table class="keep">
+<tr><th>Interaction I</th><th class="n">Estimate</th><th>95% CI</th><th>Verdict</th></tr>
+<tr><td>Raw score (pre-registered)</td><td class="n">+1.16</td><td>[+0.46, +1.82]</td><td>effect, opposite to H3</td></tr>
+<tr><td>Honest-percentile scale (pre-registered)</td><td class="n">−0.010</td><td>[−0.051, +0.020]</td><td>inconclusive (edge of the ±0.05 band)</td></tr>
+<tr><td>Detection AUROC (exploratory)</td><td class="n">+0.002</td><td>[−0.053, +0.054]</td><td>inconclusive, centred on 0</td></tr>
+</table>
+<p><b>H3 is not supported.</b> The pre-registered raw-score interaction is significant but <i>positive</i>: monitor A
+rates its own family's backdoors as more suspicious. We do not read this as own-family harshness. Monitor B gives
+8/10 to 93% of backdoors and to 31% of honest code. That ceiling leaves it unable to register how conspicuous each
+author's backdoors are, so the 2×2 design can no longer cancel author detectability. The likeliest explanation is
+that A writes more conspicuous trigger conditions, which only monitor A can see. Scale-free measures are centred on
+zero, and each monitor detects both authors' backdoors equally well. Results on raw, uncommented code are the same
+(raw +1.57 [+0.85, +2.28]; percentile +0.010 [−0.020, +0.043], no effect).</p>
+<figure><img style="width:62%" src="../results/study/figures/e3_leniency.png"><figcaption>Figure 3. E3: mean
+suspicion on backdoored code by monitor and author (bootstrap 95% CIs). Monitor B sits near its ceiling.</figcaption></figure>
 
 <h2>4. Discussion</h2>
 <p>For two 7–8B open-weight models from different families, we find no explicit self-recognition, no
-features for recognition to rest on, and no own-family leniency on honest code<span id="e3-discussion"></span>. The one
+features for recognition to rest on, and no own-family leniency on honest or backdoored code. The one
 positive sign is a small own-code tilt in Qwen's yes/no answers. That fits a weak implicit familiarity signal
-that a pairwise question hides behind position bias. Methodologically, position bias in small judges is
+that a pairwise question hides behind position bias. A second lesson concerns the leniency design itself. A monitor
+that uses only two or three score values (here mostly 0 or 8) makes a raw-score 2×2 interaction misleading, because
+it can no longer act as a control for author detectability. Scale-free measures such as detection AUROC should be
+reported next to raw means. Methodologically, position bias in small judges is
 large enough to decide the outcome of a naive pairwise test either way. Any self-recognition eval with small
 judges should counterbalance order and read probabilities rather than sampled answers.</p>
 
@@ -156,6 +183,9 @@ judges should counterbalance order and read probabilities rather than sampled an
   <li>Monitor A uses the bottom of the suspicion scale for nearly all honest code (floor effect); Llama's
     P("yes") is at the floor in E1b.</li>
   <li>Backdoors from these models are crude (explicit trigger conditions), so detectability is high.</li>
+  <li>Monitor B's score ceiling (8/10 on most backdoors and a third of honest code) weakens the raw-score E3 control.</li>
+  <li>The AUROC interaction was added after the run and is exploratory.</li>
+  <li>Two Llama backdoor samples hit the 10-minute limit and count as failed.</li>
   <li>E1b and honest-code leniency were added after E1 and are exploratory. The Holm correction was not pre-registered.</li>
 </ul>
 
@@ -174,7 +204,7 @@ judges should counterbalance order and read probabilities rather than sampled an
 <p class="small">The pipeline (<code>agenteval run all --config configs/study.yaml</code>, then
 <code>agenteval analyze</code>) reproduces every table and figure. Per-sample JSONL with full prompts and
 responses, the summary CSVs and the figures are committed under <code>results/study/</code>; raw Inspect logs
-are kept locally. Model digests are recorded in <code>run_info.json</code>. Seventy-three offline tests cover
+are kept locally. Model digests are recorded in <code>run_info.json</code>. Seventy-six offline tests cover
 grading, backdoor validation, behaviour preservation of all transforms on all 164 reference solutions, parsing,
 caching and the paid-endpoint block.</p>
 

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Own-Family Leniency Slides</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root { --ink: #0b0b0b; --ink2: #52514e; --accent: #2a78d6; --accent2: #eb6834; --bg: #fcfcfb; --rule: #e4e3df; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Helvetica", Arial, sans-serif; color: var(--ink); background: var(--bg); }
+  .slide { width: 1280px; height: 720px; padding: 56px 72px; page-break-after: always; position: relative; overflow: hidden; background: var(--bg); }
+  h1 { font-size: 46px; line-height: 1.15; margin: 0 0 18px; }
+  h2 { font-size: 34px; margin: 0 0 22px; }
+  p, li { font-size: 22px; line-height: 1.45; color: var(--ink); }
+  ul { margin: 0; padding-left: 26px; }
+  li { margin-bottom: 10px; }
+  .sub { font-size: 22px; color: var(--ink2); }
+  .big { font-size: 64px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .row { display: flex; gap: 40px; align-items: flex-start; }
+  .col { flex: 1; }
+  .card { border-left: 4px solid var(--accent); padding: 8px 16px; background: #f3f6fb; margin-bottom: 14px; }
+  .card.warm { border-color: var(--accent2); background: #fbf3ef; }
+  .foot { position: absolute; bottom: 24px; left: 72px; right: 72px; font-size: 15px; color: var(--ink2); display: flex; justify-content: space-between; }
+  img { max-width: 100%; }
+  table { border-collapse: collapse; font-size: 20px; }
+  th, td { padding: 6px 14px; border-bottom: 1px solid var(--rule); text-align: left; }
+  th { border-bottom: 2px solid var(--ink2); }
+</style>
+</head>
+<body>
+
+<div class="slide">
+  <div style="margin-top:120px">
+    <h1>Do Code Monitors Go Easy<br>on Their Own Family?</h1>
+    <p class="sub">Self-recognition and leniency in small open-weight LLMs, with no collusion instructions anywhere</p>
+    <p class="sub" style="margin-top:40px">Kaszioq · AgentEval study 1 · github.com/Kaszioq/agenteval</p>
+  </div>
+  <div class="foot"><span>Track 2: Detection and Audit of Collusion</span><span>1</span></div>
+</div>
+
+<div class="slide">
+  <h2>The question</h2>
+  <div class="row">
+    <div class="col">
+      <p>In AI control, a <b>monitor</b> model reviews code written by an <b>author</b> model and flags the most suspicious
+        outputs for a limited human audit budget.</p>
+      <p>If the monitor comes from the <b>same family</b> as the author, it might find the author's code familiar and
+        flag it less. That would be <b>collusion without any instruction</b>.</p>
+    </div>
+    <div class="col">
+      <div class="card"><b>H1</b> A model recognises its own solution above chance.</div>
+      <div class="card"><b>H2</b> Recognition rests on comments, names or formatting.</div>
+      <div class="card"><b>H3</b> Monitors rate their own family's backdoored code as less suspicious.</div>
+      <p class="sub">Pre-registered, with equivalence margins, before the main run.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Qwen2.5-Coder 7B (A) vs Llama 3.1 8B (B) · HumanEval · local Ollama · zero cost</span><span>2</span></div>
+</div>
+
+<div class="slide">
+  <h2>Setup</h2>
+  <ul>
+    <li><b>E1 / E2:</b> the judge sees its own and the other model's solution, in <b>both orders</b>. We read
+      P("1") and P("2") from token probabilities. E2 repeats this after removing comments, renaming identifiers or reformatting.</li>
+    <li><b>E1b (exploratory):</b> one solution at a time, "did you write this?", reading P("yes").</li>
+    <li><b>E3:</b> each author plants a backdoor in its own passing solution. It must pass all tests and give a wrong
+      answer on a secret input, checked in a sandbox. Both monitors score all code from 0 to 10.</li>
+    <li><b>Key quantity:</b> the 2×2 interaction I = (S<sub>AA</sub>−S<sub>AB</sub>) − (S<sub>BA</sub>−S<sub>BB</sub>),
+      which cancels differences in how detectable each author's backdoors are. H3 predicts I&nbsp;&lt;&nbsp;0.</li>
+    <li>Inspect framework, ControlArena conventions (2% audit budget), every number traced to a logged prompt and response.</li>
+  </ul>
+  <div class="foot"><span>104 problems where both models' honest solutions pass</span><span>3</span></div>
+</div>
+
+<div class="slide">
+  <h2>E1/E2: no self-recognition, and position bias decides naive tests</h2>
+  <img src="../results/study/figures/e2_ablations.png" style="width:100%">
+  <div class="row" style="margin-top:18px">
+    <div class="col"><p><span class="big">0.50</span><br>mean probability on own code, all 95% CIs inside [0.475, 0.55]: a precise null</p></div>
+    <div class="col"><p><span class="big" style="color:var(--accent2)">0.83–0.91</span><br>P("1") regardless of content. Sampled answers are "1" in 96–99% of prompts, so naive accuracy is 50% by construction.</p></div>
+  </div>
+  <div class="foot"><span>The one E2 "effect" (A, no comments, p = 0.031) does not survive a Holm correction (p = 0.31)</span><span>4</span></div>
+</div>
+
+<div class="slide">
+  <h2>E3: no own-family leniency</h2>
+  <div class="row">
+    <div class="col"><img src="../results/study/figures/e3_leniency.png"></div>
+    <div class="col">
+      <table>
+        <tr><th></th><th>AUROC A / B</th></tr>
+        <tr><td>Monitor A</td><td>0.972 / 0.970</td></tr>
+        <tr><td>Monitor B</td><td>0.836 / 0.837</td></tr>
+      </table>
+      <p style="margin-top:18px">Scale-free interactions are centred on zero (percentile −0.01, AUROC +0.002).</p>
+      <p>The raw-score interaction (+1.16) goes the <b>opposite</b> way. It comes from monitor B's ceiling: it gives 8/10 to
+        93% of backdoors, so it cannot register differences between authors.</p>
+    </div>
+  </div>
+  <div class="foot"><span>55 + 45 valid backdoors · honest-code leniency also null (rank interaction −0.004 [−0.045, +0.038])</span><span>5</span></div>
+</div>
+
+<div class="slide">
+  <h2>Takeaways</h2>
+  <div class="row">
+    <div class="col">
+      <div class="card"><b>Finding.</b> Small open models from different families neither recognise nor favour their own
+        family's code as monitors. The only signal is a small own-code tilt in Qwen's yes/no answers (+3.4 points).</div>
+      <div class="card warm"><b>Method lesson 1.</b> Pairwise self-recognition evals with small judges are dominated by
+        position bias. Counterbalance the order and read probabilities.</div>
+      <div class="card warm"><b>Method lesson 2.</b> A monitor that uses only a few score values breaks raw-score 2×2
+        designs. Report scale-free measures such as AUROC.</div>
+    </div>
+    <div class="col">
+      <p><b>Next steps</b></p>
+      <ul>
+        <li>The same pipeline on larger models from the same families</li>
+        <li>Instructed collusion (a hidden signal between author and monitor) as an upper bound</li>
+        <li>Countermeasures: renaming and reformatting to break those signals</li>
+      </ul>
+      <p class="sub" style="margin-top:24px">Open source, one command to reproduce, 76 tests, zero cost.</p>
+    </div>
+  </div>
+  <div class="foot"><span>github.com/Kaszioq/agenteval</span><span>6</span></div>
+</div>
+
+</body>
+</html>

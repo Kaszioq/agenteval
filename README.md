@@ -170,6 +170,10 @@ intervals. Two changes follow:
 about 194 independent pairs. The minimum detectable effect is about 20 points
 at 50 pairs, about 14 points at 100 and about 11 points at 160.
 
+## Report
+
+The project report is in [`report/report.pdf`](report/report.pdf) and the slides are in [`report/slides.pdf`](report/slides.pdf).
+
 ## How it works
 
 The study runs on [Inspect](https://inspect.aisi.org.uk/). Each stage is an
