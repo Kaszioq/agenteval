@@ -224,6 +224,7 @@ agenteval run recognition --config configs/study.yaml
 agenteval run backdoor --config configs/study.yaml
 agenteval run monitor --config configs/study.yaml
 agenteval run monitor_honest --config configs/study.yaml   # exploratory, honest code only
+agenteval run self_recognition --config configs/study.yaml # exploratory, yes/no recognition
 ```
 
 Outputs go to `results/<run_name>/`:
@@ -303,6 +304,20 @@ condition.
 
 ![E2](results/study/figures/e2_ablations.png)
 
+### Exploratory E1b: single-item "did you write this?"
+
+This test was planned after the E1 results. The pairwise question can be
+swamped by position bias, so here each judge sees a single raw honest solution,
+its own or the other model's, and answers "yes" or "no". We read P("yes") from
+token probabilities. For each problem we compare P("yes") on the judge's own
+solution with P("yes") on the other model's solution. The metric is the share
+of problems where the own solution gets the higher value: 0.5 means no
+recognition. It has an exact 95% interval and uses the same ±0.10 margin. A
+judge that says "yes" to everything affects both of its solutions equally, so
+this bias cancels within each problem.
+
+_Pending run._
+
 ### Exploratory: suspicion on honest code
 
 Not pre-registered; added after E1. Both monitors score every paired honest
@@ -312,7 +327,26 @@ family's ordinary code less suspicious than the other family's code, compared
 with the other monitor. Explicit recognition, which E1 found absent, is not
 needed for this kind of leniency.
 
-_Pending run._
+Mean suspicion (0–10), comment-stripped code, 104 problems per cell:
+
+| | Author A code | Author B code |
+|---|---|---|
+| **Monitor A** | 0.23 [0.09, 0.41] | 0.20 [0.08, 0.36] |
+| **Monitor B** | 2.65 [1.96, 3.37] | 2.55 [1.87, 3.22] |
+
+| Scale | Interaction | 95% CI | Verdict |
+|---|---|---|---|
+| raw score | −0.08 | [−0.61, +0.44] | inconclusive |
+| rank within monitor | −0.004 | [−0.045, +0.038] | no effect |
+
+- **No detectable own-family leniency on honest code.**
+- Monitor A scores almost all honest code near 0. This floor effect makes the
+  raw-score interval wide. The rank scale removes differences in how each
+  monitor uses the scale and shows a clear null.
+- The raw-code view gives the same picture. See
+  `results/study/summary/honest_leniency_*`.
+
+![Honest-code leniency](results/study/figures/e3x_honest_leniency.png)
 
 ### E3 (H3)
 
