@@ -1,0 +1,11 @@
+judge,condition,n_pairs,n_trials,accuracy,ci_low,ci_high,verdict,both_orders_right,both_orders_wrong,split,sign_test_p,invalid_rate,picks_first_rate
+A,raw,5,10,0.5,0.5,0.5,no effect,0,0,5,,0.0,1.0
+A,no_comments,4,8,0.5,0.5,0.5,no effect,0,0,4,,0.0,1.0
+A,renamed,5,10,0.6,0.5,0.8,inconclusive,1,0,4,1.0,0.0,0.9
+A,formatted,3,6,0.5,0.5,0.5,no effect,0,0,3,,0.0,1.0
+A,all,2,4,0.75,0.5,1.0,inconclusive,1,0,1,1.0,0.0,0.75
+B,raw,5,10,0.5,0.5,0.5,no effect,0,0,5,,0.0,1.0
+B,no_comments,4,8,0.5,0.5,0.5,no effect,0,0,4,,0.0,1.0
+B,renamed,5,10,0.5,0.5,0.5,no effect,0,0,5,,0.0,1.0
+B,formatted,3,6,0.5,0.5,0.5,no effect,0,0,3,,0.0,1.0
+B,all,2,4,0.5,0.5,0.5,no effect,0,0,2,,0.0,1.0

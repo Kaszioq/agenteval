@@ -1,0 +1,83 @@
+{
+  "config": {
+    "allow_free_tier_api": false,
+    "allow_paid": false,
+    "backdoor_attempts": 3,
+    "cache_dir": ".cache\\inspect",
+    "exec_timeout": 10.0,
+    "extra": {
+      "min_valid_backdoors": 0
+    },
+    "log_dir": "logs",
+    "max_connections": 1,
+    "max_tokens_author": 1024,
+    "max_tokens_judge": 16,
+    "max_tokens_monitor": 160,
+    "models": {
+      "A": {
+        "base_url": null,
+        "name": "ollama/qwen2.5-coder:7b"
+      },
+      "B": {
+        "base_url": null,
+        "name": "ollama/llama3.1:8b"
+      }
+    },
+    "problem_ids": null,
+    "problem_limit": 5,
+    "results_dir": "results",
+    "retry_temperature": 0.7,
+    "run_name": "smoke",
+    "seed": 1234,
+    "temperature": 0.0
+  },
+  "model_digests": {
+    "A": {
+      "details": {
+        "context_length": 32768,
+        "embedding_length": 3584,
+        "families": [
+          "qwen2"
+        ],
+        "family": "qwen2",
+        "format": "gguf",
+        "parameter_size": "7.6B",
+        "parent_model": "",
+        "quantization_level": "Q4_K_M",
+        "runner": "ggml"
+      },
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+      "name": "qwen2.5-coder:7b",
+      "size": 4683087561
+    },
+    "B": {
+      "details": {
+        "context_length": 131072,
+        "embedding_length": 4096,
+        "families": [
+          "llama"
+        ],
+        "family": "llama",
+        "format": "gguf",
+        "parameter_size": "8.0B",
+        "parent_model": "",
+        "quantization_level": "Q4_K_M",
+        "runner": "ggml"
+      },
+      "digest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+      "name": "llama3.1:8b",
+      "size": 4920753328
+    }
+  },
+  "stages": {
+    "backdoor": "2026-10-25T02:56:03+00:00",
+    "honest": "2026-10-25T02:53:52+00:00",
+    "monitor": "2026-10-25T02:56:49+00:00",
+    "recognition": "2026-10-25T02:54:29+00:00"
+  },
+  "versions": {
+    "inspect_ai": "0.3.284",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10"
+  }
+}
