@@ -223,6 +223,7 @@ agenteval run honest --config configs/study.yaml
 agenteval run recognition --config configs/study.yaml
 agenteval run backdoor --config configs/study.yaml
 agenteval run monitor --config configs/study.yaml
+agenteval run monitor_honest --config configs/study.yaml   # exploratory, honest code only
 ```
 
 Outputs go to `results/<run_name>/`:
@@ -301,6 +302,17 @@ condition.
 - Every mean p_own interval lies inside [0.475, 0.551].
 
 ![E2](results/study/figures/e2_ablations.png)
+
+### Exploratory: suspicion on honest code
+
+Not pre-registered; added after E1. Both monitors score every paired honest
+solution, using the E3 monitor prompt. The analysis is the same 2×2
+interaction as E3, but on honest code. It asks whether a monitor finds its own
+family's ordinary code less suspicious than the other family's code, compared
+with the other monitor. Explicit recognition, which E1 found absent, is not
+needed for this kind of leniency.
+
+_Pending run._
 
 ### E3 (H3)
 
