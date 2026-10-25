@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from agenteval.analysis import _pair_scores, auroc, honest_percentile, verdict
+from agenteval.analysis import _pair_scores, auroc, clopper_pearson, honest_percentile, verdict
 
 
 def test_pair_score_cancels_constant_position_bias() -> None:
@@ -33,3 +33,15 @@ def test_auroc_and_percentile() -> None:
     assert auroc(np.array([3.0]), np.array([3.0])) == 0.5
     pct = honest_percentile(np.array([0.0, 2.0, 9.0]), np.array([0.0, 1.0, 2.0, 3.0]))
     assert np.allclose(pct, [0.125, 0.625, 1.0])
+
+
+def test_small_samples_get_no_verdict() -> None:
+    assert verdict(0.9, 1.0, 0.5, 0.1, n=4) == "too few (n=4)"
+    assert verdict(0.55, 0.7, 0.5, 0.1, n=40) == "effect"
+
+
+def test_clopper_pearson_is_wide_for_small_samples() -> None:
+    low, high = clopper_pearson(4, 4)
+    assert high == 1.0 and 0.39 < low < 0.40  # 4/4 correct does not exclude 0.5
+    low, high = clopper_pearson(70, 100)
+    assert 0.60 < low < 0.61 and 0.78 < high < 0.79
