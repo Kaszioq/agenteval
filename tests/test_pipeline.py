@@ -47,7 +47,13 @@ def test_end_to_end_one_problem(tmp_path: Path) -> None:
     assert all(r["valid"] for r in monitor)
     assert "author" not in monitor[0]["user"].lower().replace("authorship", "")
 
+    honest_scores = run_stage(cfg, "monitor_honest")
+    assert len(honest_scores) == 2 * 2 * 2  # monitors x authors x views, honest only
+    assert {r["kind"] for r in honest_scores} == {"honest"}
+
     summary = analyze_run(cfg, n_boot=200)
+    assert "Exploratory: suspicion on honest code" in summary
+    assert (cfg.run_dir / "figures" / "e3x_honest_leniency.png").exists()
     assert "E1 / E2" in summary and "E3" in summary
     for name in ("e1_recognition.png", "e2_ablations.png", "e3_leniency.png"):
         assert (cfg.run_dir / "figures" / name).exists()

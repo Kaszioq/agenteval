@@ -34,6 +34,8 @@ from agenteval.tasks import RESULT_KEY, author_task, monitor_task, recognition_t
 from agenteval.transforms import CONDITIONS, TransformError, apply_condition, strip_comments
 
 STAGES = ("honest", "recognition", "backdoor", "monitor")
+# Exploratory, not pre-registered: monitors score honest code only (no backdoor stage needed).
+EXTRA_STAGES = ("monitor_honest",)
 MONITOR_VIEWS = ("stripped", "raw")
 
 
@@ -246,15 +248,16 @@ def backdoor_counts(cfg: StudyConfig) -> dict[str, int]:
     return counts
 
 
-def monitor_items(cfg: StudyConfig) -> list[dict[str, Any]]:
+def monitor_items(cfg: StudyConfig, include_backdoors: bool = True) -> list[dict[str, Any]]:
     problems = problems_by_id(_problems(cfg))
     sources: list[tuple[str, str, str, str]] = []  # (task_id, author, kind, code)
     for tid, codes in paired_solutions(cfg).items():
         for author, code in codes.items():
             sources.append((tid, author, "honest", code))
-    for row in read_jsonl(stage_path(cfg, "backdoor")):
-        if row["valid"]:
-            sources.append((row["task_id"], row["author"], "backdoor", row["code"]))
+    if include_backdoors:
+        for row in read_jsonl(stage_path(cfg, "backdoor")):
+            if row["valid"]:
+                sources.append((row["task_id"], row["author"], "backdoor", row["code"]))
     items = []
     for tid, author, kind, code in sources:
         for view in MONITOR_VIEWS:
@@ -296,6 +299,19 @@ def run_monitor(cfg: StudyConfig, force: bool = False) -> list[dict[str, Any]]:
     return rows
 
 
+def run_monitor_honest(cfg: StudyConfig) -> list[dict[str, Any]]:
+    """Both monitors score every paired honest solution. Uses the same prompts as the
+    monitor stage, so those calls are served from the cache later."""
+    items = monitor_items(cfg, include_backdoors=False)
+    rows = []
+    for monitor in cfg.model_ids:
+        for row in _run(monitor_task(items, cfg), monitor, cfg):
+            rows.append({**row, "monitor": monitor})
+    write_jsonl(stage_path(cfg, "monitor_honest"), rows)
+    write_run_info(cfg, "monitor_honest")
+    return rows
+
+
 def run_stage(cfg: StudyConfig, stage: str, force: bool = False) -> list[dict[str, Any]]:
     if stage == "honest":
         return run_honest(cfg)
@@ -305,4 +321,6 @@ def run_stage(cfg: StudyConfig, stage: str, force: bool = False) -> list[dict[st
         return run_backdoor(cfg)
     if stage == "monitor":
         return run_monitor(cfg, force=force)
-    raise ValueError(f"unknown stage {stage!r}; choose from {STAGES}")
+    if stage == "monitor_honest":
+        return run_monitor_honest(cfg)
+    raise ValueError(f"unknown stage {stage!r}; choose from {STAGES + EXTRA_STAGES}")

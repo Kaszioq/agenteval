@@ -6,7 +6,7 @@ import argparse
 import sys
 
 from agenteval.config import load_config
-from agenteval.pipeline import STAGES, StageError, run_stage
+from agenteval.pipeline import EXTRA_STAGES, STAGES, StageError, run_stage
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -14,7 +14,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run one stage, or all stages in order")
-    run.add_argument("stage", choices=[*STAGES, "all"])
+    run.add_argument("stage", choices=[*STAGES, *EXTRA_STAGES, "all"])
     run.add_argument("--config", default="configs/study.yaml")
     run.add_argument("--force", action="store_true", help="continue past the backdoor-count check")
 
