@@ -6,7 +6,8 @@
     "cache_dir": ".cache\\inspect",
     "exec_timeout": 10.0,
     "extra": {
-      "min_valid_backdoors": 25
+      "min_valid_backdoors": 25,
+      "sample_time_limit": 600
     },
     "log_dir": "logs",
     "max_connections": 1,
@@ -70,7 +71,9 @@
     }
   },
   "stages": {
+    "backdoor": "2026-10-25T15:36:20+00:00",
     "honest": "2026-10-25T03:50:57+00:00",
+    "monitor": "2026-10-25T15:53:25+00:00",
     "monitor_honest": "2026-10-25T11:41:04+00:00",
     "recognition": "2026-10-25T03:58:59+00:00",
     "self_recognition": "2026-10-25T11:56:56+00:00"
