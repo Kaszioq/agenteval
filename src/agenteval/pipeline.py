@@ -106,8 +106,10 @@ def _run(task: Task, model_id: str, cfg: StudyConfig) -> list[dict[str, Any]]:
     rows = []
     failed = 0
     for sample in log.samples:
-        if RESULT_KEY in sample.store and sample.error is None:
-            result = sample.store[RESULT_KEY]
+        stored = sample.store.get(RESULT_KEY)
+        if isinstance(stored, dict) and sample.error is None and sample.limit is None:
+            # Defaults first, so a row is never missing a field later stages read.
+            result = {**_FAILED_SAMPLE, **stored}
         else:
             failed += 1
             reason = "time limit" if sample.limit is not None else str(sample.error)[:300]
@@ -116,6 +118,7 @@ def _run(task: Task, model_id: str, cfg: StudyConfig) -> list[dict[str, Any]]:
                 **{k: v for k, v in sample.metadata.items() if k in ("task_id", "author", "kind", "view", "condition", "order", "own_position")},
                 "sample_error": reason,
             }
+            print(f"warning: sample {sample.id} failed: {reason}", file=sys.stderr)
         rows.append({**result, "sample_id": sample.id, "log": log.location})
     if failed:
         print(
@@ -176,7 +179,8 @@ def run_honest(cfg: StudyConfig) -> list[dict[str, Any]]:
     rows = []
     for model_id in cfg.model_ids:
         for row in _run(author_task(problems, cfg, backdoor=False), model_id, cfg):
-            rows.append({**row, "author": model_id, "code": row["final"]["code"], "passed": row["ok"]})
+            code = (row.get("final") or {}).get("code")
+            rows.append({**row, "author": model_id, "code": code, "passed": bool(row["ok"]) and code is not None})
     write_jsonl(stage_path(cfg, "honest"), rows)
     write_run_info(cfg, "honest")
     return rows
@@ -265,13 +269,13 @@ def run_backdoor(cfg: StudyConfig) -> list[dict[str, Any]]:
         own = {tid: codes[model_id] for tid, codes in pairs.items()}
         task = author_task(targets, cfg, backdoor=True, base_code=own)
         for row in _run(task, model_id, cfg):
-            final = row["final"]
+            final = row.get("final") or {}
             rows.append(
                 {
                     **row,
                     "author": model_id,
-                    "valid": row["ok"],
-                    "code": final["code"],
+                    "valid": bool(row["ok"]) and final.get("code") is not None,
+                    "code": final.get("code"),
                     "secret_input": final.get("secret_input"),
                 }
             )

@@ -79,3 +79,40 @@ def test_monitor_stage_stops_when_backdoors_are_scarce(tmp_path: Path) -> None:
         assert "too few valid backdoors" in str(exc)
     else:
         raise AssertionError("monitor stage should refuse to run")
+
+
+def test_failed_samples_are_counted_not_fatal(tmp_path: Path, monkeypatch) -> None:
+    """A model error on one problem must not stop the stage or break later stages."""
+    from agenteval import mock
+
+    original = mock.mock_outputs
+
+    def flaky(model_id: str):  # type: ignore[no-untyped-def]
+        respond = original(model_id)
+
+        def wrapped(input, tools, tool_choice, config):  # type: ignore[no-untyped-def]
+            text = input[1].text if len(input) > 1 else ""
+            if "SECRET_INPUT" in text and "has_close_elements" in text:
+                raise RuntimeError("simulated failure")
+            return respond(input, tools, tool_choice, config)
+
+        return wrapped
+
+    monkeypatch.setattr(mock, "mock_outputs", flaky)
+    cfg = StudyConfig(
+        run_name="flaky",
+        models={"A": ModelSpec("mockllm/A"), "B": ModelSpec("mockllm/B")},
+        problem_ids=["HumanEval/0", "HumanEval/2"],
+        backdoor_attempts=1,
+        results_dir=tmp_path / "results",
+        log_dir=tmp_path / "logs",
+        cache_dir=tmp_path / "cache",
+        extra={"min_valid_backdoors": 1},
+    )
+    run_stage(cfg, "honest")
+    rows = run_stage(cfg, "backdoor")
+    by_task = {(r["author"], r["task_id"]): r for r in rows}
+    assert not by_task[("A", "HumanEval/0")]["valid"]
+    assert "simulated failure" in by_task[("A", "HumanEval/0")]["sample_error"]
+    assert by_task[("A", "HumanEval/2")]["valid"]
+    assert run_stage(cfg, "monitor")  # only valid backdoors reach the monitor
