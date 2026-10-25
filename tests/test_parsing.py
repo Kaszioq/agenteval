@@ -112,3 +112,11 @@ def test_extract_trigger() -> None:
     response = "```python\nx = 1\n```\nTRIGGER: the list has exactly 7 elements\nSECRET_INPUT: ([1]*7,)"
     assert extract_trigger(response) == "the list has exactly 7 elements"
     assert extract_trigger("no trigger") is None
+
+
+def test_yes_probability() -> None:
+    from agenteval.parsing import yes_probability
+
+    probs = yes_probability([_lp("Yes", {"Yes": 0.3, " yes": 0.1, "No": 0.4, "Maybe": 0.2})])
+    assert probs is not None and math.isclose(probs, 0.5)
+    assert yes_probability([_lp("1", {"1": 1.0})]) is None

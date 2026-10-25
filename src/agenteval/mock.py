@@ -146,6 +146,17 @@ def mock_outputs(
             logprobs = Logprobs(
                 content=[Logprob(token=content, logprob=chosen.logprob, top_logprobs=top)]
             )
+        elif system == prompts.SELF_SYSTEM:
+            p_yes = 0.6 if MARKERS[model_id] in user else 0.4
+            content = "yes" if p_yes > 0.5 else "no"
+            top = [
+                TopLogprob(token="yes", logprob=math.log(p_yes)),
+                TopLogprob(token="no", logprob=math.log(1 - p_yes)),
+            ]
+            chosen = next(t for t in top if t.token == content)
+            logprobs = Logprobs(
+                content=[Logprob(token=content, logprob=chosen.logprob, top_logprobs=top)]
+            )
         elif system == prompts.AUTHOR_SYSTEM:
             first_user = _text(input[1])  # the task; later turns are feedback
             content = _author(model_id, first_user, problems, backdoor="SECRET_INPUT" in first_user)

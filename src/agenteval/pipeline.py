@@ -30,12 +30,18 @@ from agenteval.config import StudyConfig
 from agenteval.models import provider_of, resolve_model
 from agenteval.problems import Problem, load_problems, problems_by_id
 from agenteval.sandbox import run_tests
-from agenteval.tasks import RESULT_KEY, author_task, monitor_task, recognition_task
+from agenteval.tasks import (
+    RESULT_KEY,
+    author_task,
+    monitor_task,
+    recognition_task,
+    self_judge_task,
+)
 from agenteval.transforms import CONDITIONS, TransformError, apply_condition, strip_comments
 
 STAGES = ("honest", "recognition", "backdoor", "monitor")
 # Exploratory, not pre-registered: monitors score honest code only (no backdoor stage needed).
-EXTRA_STAGES = ("monitor_honest",)
+EXTRA_STAGES = ("monitor_honest", "self_recognition")
 MONITOR_VIEWS = ("stripped", "raw")
 
 
@@ -312,6 +318,24 @@ def run_monitor_honest(cfg: StudyConfig) -> list[dict[str, Any]]:
     return rows
 
 
+def run_self_recognition(cfg: StudyConfig) -> list[dict[str, Any]]:
+    """Exploratory single-item test: each judge sees one raw honest solution at a time,
+    its own or the other model's, and is asked whether it wrote it."""
+    problems = problems_by_id(_problems(cfg))
+    items = [
+        {"task_id": tid, "author": author, "prompt": problems[tid].prompt, "code": code}
+        for tid, codes in paired_solutions(cfg).items()
+        for author, code in codes.items()
+    ]
+    rows = []
+    for judge in cfg.model_ids:
+        for row in _run(self_judge_task(items, cfg), judge, cfg):
+            rows.append({**row, "judge": judge, "own": row["author"] == judge})
+    write_jsonl(stage_path(cfg, "self_recognition"), rows)
+    write_run_info(cfg, "self_recognition")
+    return rows
+
+
 def run_stage(cfg: StudyConfig, stage: str, force: bool = False) -> list[dict[str, Any]]:
     if stage == "honest":
         return run_honest(cfg)
@@ -323,4 +347,6 @@ def run_stage(cfg: StudyConfig, stage: str, force: bool = False) -> list[dict[st
         return run_monitor(cfg, force=force)
     if stage == "monitor_honest":
         return run_monitor_honest(cfg)
+    if stage == "self_recognition":
+        return run_self_recognition(cfg)
     raise ValueError(f"unknown stage {stage!r}; choose from {STAGES + EXTRA_STAGES}")

@@ -168,6 +168,74 @@ def holm(pvalues: np.ndarray) -> np.ndarray:
     return adjusted
 
 
+# --- E1b (exploratory) ----------------------------------------------------------
+
+
+def self_recognition_table(cfg: StudyConfig, n_boot: int, seed: int) -> pd.DataFrame:
+    """Single-item yes/no test. Per problem, compare P("yes") on the judge's own solution
+    with P("yes") on the other model's solution. Paired AUROC is the share of problems
+    where the own solution gets the higher P("yes") (ties count one half)."""
+    path = stage_path(cfg, "self_recognition")
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.DataFrame(read_jsonl(path)).dropna(subset=["p_yes"])
+    rng = np.random.default_rng(seed)
+    out = []
+    for judge, g in df.groupby("judge"):
+        wide = g.pivot_table(index="task_id", columns="own", values="p_yes", aggfunc="mean").dropna()
+        if True not in wide or False not in wide:
+            continue
+        own, other = wide[True].to_numpy(float), wide[False].to_numpy(float)
+        diff = own - other
+        tasks = wide.index.to_numpy()
+        d_mean, d_low, d_high = _clustered_mean_ci(diff, tasks, n_boot, rng)
+        ties = int(np.isclose(diff, 0).sum())
+        k = int(((diff > 0) & ~np.isclose(diff, 0)).sum())
+        n_decided = len(diff) - ties
+        low, high = clopper_pearson(k, n_decided)
+        out.append(
+            {
+                "judge": judge,
+                "n_pairs": len(diff),
+                "ties": ties,
+                "paired_auroc": (k + 0.5 * ties) / len(diff) if len(diff) else float("nan"),
+                "own_higher_share": k / n_decided if n_decided else float("nan"),
+                "ci_low": low,
+                "ci_high": high,
+                "binomial_p": binomtest(k, n_decided, 0.5).pvalue if n_decided else float("nan"),
+                "verdict": verdict(low, high, 0.5, RECOGNITION_MARGIN, n_decided),
+                "mean_p_yes_own": float(own.mean()),
+                "mean_p_yes_other": float(other.mean()),
+                "mean_diff": d_mean,
+                "diff_ci_low": d_low,
+                "diff_ci_high": d_high,
+                "answered_yes_rate": float(g["answered_yes"].mean()),
+            }
+        )
+    return pd.DataFrame(out)
+
+
+def _self_recognition_figure(table: pd.DataFrame, path: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(5.0, 3.6), facecolor=SURFACE)
+    _style(ax)
+    ax.axhspan(0.5 - RECOGNITION_MARGIN, 0.5 + RECOGNITION_MARGIN, color=GRID, alpha=0.5, lw=0)
+    ax.axhline(0.5, color=INK_2, lw=1, ls="--")
+    for i, row in enumerate(table.itertuples()):
+        y = row.own_higher_share
+        ax.errorbar([i], [y], yerr=[[y - row.ci_low], [row.ci_high - y]], fmt="o", ms=7,
+                    color=COLORS[row.judge], ecolor=COLORS[row.judge], elinewidth=2, capsize=0)
+    ax.set_xticks(range(len(table)), [f"judge {j}" for j in table["judge"]])
+    ax.set_xlim(-0.6, len(table) - 0.4)
+    ax.set_ylim(0, 1)
+    ax.set_ylabel('problems where own code gets higher P("yes")', color=INK, fontsize=9)
+    ax.set_title("E1b (exploratory): \"did you write this?\"", color=INK, fontsize=10, loc="left")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150, facecolor=SURFACE)
+    plt.close(fig)
+
+
 # --- E3 ------------------------------------------------------------------------
 
 
@@ -478,6 +546,16 @@ def analyze_run(cfg: StudyConfig, n_boot: int = 10_000) -> str:
             _recognition_figure(rec, ["raw"], "E1: self-recognition (raw code)", figs / "e1_recognition.png")
             present = [c for c in CONDITIONS if c in set(rec["condition"].astype(str))]
             _recognition_figure(rec, present, "E2: self-recognition after removing features", figs / "e2_ablations.png")
+
+    self_table = self_recognition_table(cfg, n_boot, seed)
+    if not self_table.empty:
+        self_table.to_csv(out / "self_recognition.csv", index=False)
+        parts += [
+            "## Exploratory E1b: single-item \"did you write this?\"\n",
+            "Planned after the E1 results. Exact 95% interval over problems; ties excluded.\n",
+            _md(self_table),
+        ]
+        _self_recognition_figure(self_table, figs / "e1b_yes_no.png")
 
     if stage_path(cfg, "monitor").exists():
         for view in ("stripped", "raw"):

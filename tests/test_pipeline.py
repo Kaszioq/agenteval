@@ -51,7 +51,14 @@ def test_end_to_end_one_problem(tmp_path: Path) -> None:
     assert len(honest_scores) == 2 * 2 * 2  # monitors x authors x views, honest only
     assert {r["kind"] for r in honest_scores} == {"honest"}
 
+    self_rows = run_stage(cfg, "self_recognition")
+    assert len(self_rows) == 2 * 2  # judges x authors
+    assert all(r["p_yes"] is not None for r in self_rows)
+    assert {r["own"] for r in self_rows} == {True, False}
+
     summary = analyze_run(cfg, n_boot=200)
+    assert "Exploratory E1b" in summary
+    assert (cfg.run_dir / "figures" / "e1b_yes_no.png").exists()
     assert "Exploratory: suspicion on honest code" in summary
     assert (cfg.run_dir / "figures" / "e3x_honest_leniency.png").exists()
     assert "E1 / E2" in summary and "E3" in summary

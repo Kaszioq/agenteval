@@ -33,6 +33,7 @@ from agenteval.parsing import (
     parse_judge_answer,
     parse_monitor,
     position_probabilities,
+    yes_probability,
 )
 from agenteval.problems import Problem
 from agenteval.sandbox import check_backdoor, run_tests
@@ -301,4 +302,56 @@ def monitor_task(items: list[dict[str, Any]], cfg: StudyConfig) -> Task:
         dataset=MemoryDataset(samples),
         solver=monitor_solver(cfg),
         scorer=stored_value("score"),
+    )
+
+
+# --- single-item self-recognition (exploratory) --------------------------------
+
+
+@solver
+def self_judge_solver(cfg: StudyConfig):  # type: ignore[no-untyped-def]
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        md = state.metadata
+        user = prompts.SELF_USER.format(
+            prompt=prompts.problem_text(md["prompt"]), code=md["code"].rstrip("\n")
+        )
+        config = GenerateConfig(
+            temperature=cfg.temperature,
+            seed=cfg.seed,
+            max_tokens=cfg.max_tokens_judge,
+            logprobs=True,
+            top_logprobs=JUDGE_TOP_LOGPROBS,
+        )
+        output, messages = await _generate_output(prompts.SELF_SYSTEM, user, config)
+        state.messages = messages
+        logprobs = output.choices[0].logprobs if output.choices else None
+        p_yes = yes_probability(logprobs.content if logprobs else None)
+        answer = output.completion.strip().lower()
+        state.store.set(
+            RESULT_KEY,
+            {
+                "task_id": md["task_id"],
+                "author": md["author"],
+                "user": user,
+                "response": output.completion,
+                "answered_yes": answer.startswith("yes"),
+                "p_yes": p_yes,
+            },
+        )
+        return state
+
+    return solve
+
+
+def self_judge_task(items: list[dict[str, Any]], cfg: StudyConfig) -> Task:
+    """``items``: dicts with task_id, author, prompt, code (raw honest solutions)."""
+    samples = [
+        Sample(id=f"{it['task_id']}|{it['author']}", input=it["task_id"], metadata=dict(it))
+        for it in items
+    ]
+    return Task(
+        name="self_recognition",
+        dataset=MemoryDataset(samples),
+        solver=self_judge_solver(cfg),
+        scorer=stored_value("p_yes"),
     )

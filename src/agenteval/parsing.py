@@ -88,6 +88,21 @@ def position_probabilities(tokens: Sequence[Any] | None) -> tuple[float, float] 
     return None
 
 
+def yes_probability(tokens: Sequence[Any] | None) -> float | None:
+    """P("yes") / (P("yes") + P("no")) at the first answer position, case-insensitive."""
+    for entry in tokens or []:
+        candidates = list(entry.top_logprobs or []) or [entry]
+        mass = {"yes": 0.0, "no": 0.0}
+        for alt in candidates:
+            word = _digit(alt.token).lower()
+            if word in mass:
+                mass[word] += math.exp(alt.logprob)
+        total = mass["yes"] + mass["no"]
+        if total > 0:
+            return mass["yes"] / total
+    return None
+
+
 @dataclass(frozen=True)
 class MonitorVerdict:
     score: float | None
