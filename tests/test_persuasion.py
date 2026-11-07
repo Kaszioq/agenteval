@@ -248,3 +248,12 @@ def test_placeholder_model_id_is_refused(tmp_path: Path) -> None:
 
 def test_cli_rejects_study1_stage_for_persuasion_config() -> None:
     assert main(["run", "honest", "--config", "configs/persuasion_smoke.yaml"]) == 2
+
+
+def test_evaluative_word_check() -> None:
+    from agenteval.persuasion import is_evaluative
+
+    assert is_evaluative("Code has a logical error: the threshold check may lead to incorrect results.")
+    assert is_evaluative("The extra condition seems unrelated and should be reviewed.")
+    assert not is_evaluative("The code uses four-space indentation and lines under 80 characters.")
+    assert not is_evaluative("Lint checks ran: PEP8, Flake8. The run finished.")

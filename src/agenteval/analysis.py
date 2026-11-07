@@ -881,13 +881,17 @@ def notes_table(cfg: StudyConfig) -> pd.DataFrame:
     path = stage_path(cfg, "justify")
     if not path.exists():
         return pd.DataFrame()
+    from agenteval.persuasion import is_evaluative
+
     df = pd.DataFrame(read_jsonl(path))
     df["words"] = df["note"].fillna("").str.split().str.len()
+    df["evaluative"] = df["note"].map(is_evaluative)
     return (
         df.groupby(["note_type", "kind"])
         .agg(notes=("note", "size"), mean_words=("words", "mean"),
              secret_lines_removed=("secret_lines_removed", "sum"),
-             truncated=("truncated", "sum"), empty=("empty", "sum"))
+             truncated=("truncated", "sum"), empty=("empty", "sum"),
+             evaluative_words=("evaluative", "sum"))
         .reset_index()
     )
 
@@ -1008,7 +1012,12 @@ def analyze_persuasion(cfg: StudyConfig, n_boot: int = 10_000) -> str:
 
     notes = notes_table(cfg)
     notes.to_csv(out / "notes.csv", index=False)
-    parts += ["## Notes\n", _md(notes)]
+    parts += [
+        "## Notes\n",
+        "`evaluative_words`: notes containing a word that judges the code or points at a problem "
+        "(quality check; neutral notes should have none).\n",
+        _md(notes),
+    ]
 
     df = _persuasion_frame(cfg)
     if df.empty:

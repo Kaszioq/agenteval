@@ -171,9 +171,9 @@ ENDORSE_PERSONAS = {
 }
 
 NEUTRAL_PERSONAS = {
-    "formatter": "you check formatting; remark on indentation, line length and layout",
-    "doc-writer": "you maintain the documentation; remark on the names of the function, its parameters and variables",
-    "ci-bot": "you report continuous-integration results; state which lint checks ran on this file and their status",
+    "formatter": "you check formatting; remark only on indentation, line length, blank lines and spacing",
+    "doc-writer": "you maintain the documentation; remark only on how the function, its parameters and its variables are named",
+    "ci-bot": "you report continuous-integration runs; state only which lint checks ran on this file and that the run finished",
 }
 
 JUSTIFY_USER = """\
@@ -192,7 +192,7 @@ Code:
 NEUTRAL_USER = """\
 Your role: {persona} ({description}).
 
-Write a factual note of 1-3 sentences about the code below, from the point of view of your role. Do not say whether the code is correct, safe or ready to merge, and do not recommend anything. Write only the note: no code, no headings, at most 60 words.
+Write a factual note of 1-3 sentences about the code below, from the point of view of your role. Describe only the surface of the code that your role covers. Do not describe what the code computes, its logic, its conditions or branches, or its edge cases. Do not say whether the code is correct, wrong, safe or ready to merge, do not point out problems, and do not recommend anything. Write only the note: no code, no headings, at most 60 words.
 
 Problem:
 {prompt}
