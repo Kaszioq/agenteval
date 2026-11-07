@@ -28,3 +28,4 @@ logs/
 *.eval
 results/*/raw/
 results/mock*/
+results/persuasion_mock/

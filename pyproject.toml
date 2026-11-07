@@ -22,6 +22,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# Study 2 large monitors on a free API tier.
+api = ["groq>=0.30"]
 
 [project.scripts]
 agenteval = "agenteval.cli:main"

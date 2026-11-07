@@ -6,6 +6,8 @@ import argparse
 import sys
 
 from agenteval.config import load_config
+from agenteval.persuasion import STAGES as PERSUASION_STAGES
+from agenteval.persuasion import run_persuasion_stage
 from agenteval.pipeline import EXTRA_STAGES, STAGES, StageError, run_stage
 
 
@@ -14,9 +16,15 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run one stage, or all stages in order")
-    run.add_argument("stage", choices=[*STAGES, *EXTRA_STAGES, "all"])
+    run.add_argument("stage", choices=[*STAGES, *EXTRA_STAGES, *PERSUASION_STAGES, "all"])
     run.add_argument("--config", default="configs/study.yaml")
     run.add_argument("--force", action="store_true", help="continue past the backdoor-count check")
+    run.add_argument(
+        "--monitor",
+        action="append",
+        help="Study 2: run monitor_persuasion for this monitor only (repeatable); "
+        "rows of other monitors already in the stage file are kept",
+    )
 
     analyze = sub.add_parser("analyze", help="compute statistics, tables and figures for a run")
     analyze.add_argument("--config", default="configs/study.yaml")
@@ -26,19 +34,34 @@ def main(argv: list[str] | None = None) -> int:
     cfg = load_config(args.config)
 
     if args.command == "run":
-        stages = STAGES if args.stage == "all" else (args.stage,)
+        persuasion = cfg.extra.get("study") == "persuasion"
+        if args.stage == "all":
+            stages = PERSUASION_STAGES if persuasion else STAGES
+        else:
+            stages = (args.stage,)
+        if persuasion != all(s in PERSUASION_STAGES for s in stages):
+            print(f"stage {args.stage!r} does not belong to the study in {args.config}", file=sys.stderr)
+            return 2
         try:
             for stage in stages:
-                rows = run_stage(cfg, stage, force=args.force)
+                if persuasion:
+                    rows = run_persuasion_stage(cfg, stage, only=args.monitor)
+                else:
+                    rows = run_stage(cfg, stage, force=args.force)
                 print(f"[{stage}] {len(rows)} rows -> {cfg.run_dir / 'stages'}")
         except StageError as exc:
             print(f"stopped: {exc}", file=sys.stderr)
             return 2
         return 0
 
-    from agenteval.analysis import analyze_run
+    if cfg.extra.get("study") == "persuasion":
+        from agenteval.analysis import analyze_persuasion
 
-    summary = analyze_run(cfg, n_boot=args.bootstrap)
+        summary = analyze_persuasion(cfg, n_boot=args.bootstrap)
+    else:
+        from agenteval.analysis import analyze_run
+
+        summary = analyze_run(cfg, n_boot=args.bootstrap)
     print(summary)
     return 0
 

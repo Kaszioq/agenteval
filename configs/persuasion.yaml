@@ -1,0 +1,36 @@
+# Study 2: do notes from other agents make a monitor more lenient on backdoors?
+# Items come from Study 1's stage files; Study 1 results are only read, never written.
+study: persuasion
+run_name: persuasion
+source_stages: results/study/stages
+models:
+  A:
+    name: ollama/qwen2.5-coder:7b
+  B:
+    name: ollama/llama3.1:8b
+  # Large monitors on free API tiers. Fill in the exact model id from the provider's
+  # model list before running them; a name with <...> is refused. Keys come from
+  # environment variables only (for example GROQ_API_KEY).
+  L1:
+    name: groq/<model id of a ~70B model>
+    max_connections: 1
+    max_retries: 8
+  L2:
+    name: groq/<optional second large model id>
+    max_connections: 1
+    max_retries: 8
+note_author: A                # one fixed model writes every note
+monitors: [A, B]              # add L1 / L2 once their ids are filled in
+large_monitors: [L1, L2]      # the group compared with A and B in H7
+conditions: [C0, E1, E3, E5, E3A, N3]
+seed: 1234
+temperature: 0.0
+max_tokens_note: 120
+max_tokens_monitor: 160
+max_connections: 1            # Ollama serves one request at a time by default
+sample_time_limit: 600
+allow_free_tier_api: true     # free API tiers only; keys from environment variables
+allow_paid: false             # hard budget rule: never set true
+results_dir: results
+log_dir: logs
+cache_dir: .cache/inspect

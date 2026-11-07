@@ -54,7 +54,11 @@ def resolve_model(model_id: str, cfg: StudyConfig) -> Model:
         spec.name, allow_paid=cfg.allow_paid, allow_free_tier_api=cfg.allow_free_tier_api
     )
     configure_cache(cfg)
-    config = GenerateConfig(seed=cfg.seed, max_connections=cfg.max_connections)
+    config = GenerateConfig(
+        seed=cfg.seed,
+        max_connections=spec.max_connections or cfg.max_connections,
+        max_retries=spec.max_retries,
+    )
     if provider_of(spec.name) == "mockllm":
         from agenteval.mock import mock_outputs
 

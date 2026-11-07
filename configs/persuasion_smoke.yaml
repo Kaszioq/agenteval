@@ -1,0 +1,19 @@
+# Study 2 smoke test: 5 tasks with the local models.
+study: persuasion
+run_name: persuasion_smoke
+source_stages: results/study/stages
+task_limit: 5
+models:
+  A:
+    name: ollama/qwen2.5-coder:7b
+  B:
+    name: ollama/llama3.1:8b
+note_author: A
+monitors: [A, B]
+large_monitors: []
+conditions: [C0, E1, E3, E5, E3A, N3]
+seed: 1234
+max_tokens_note: 120
+max_connections: 1
+allow_free_tier_api: false
+allow_paid: false

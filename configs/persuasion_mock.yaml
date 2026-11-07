@@ -1,0 +1,19 @@
+# Study 2 offline check with the mock models. Needs Study 1 mock stages first:
+#   agenteval run honest --config configs/mock.yaml
+#   agenteval run backdoor --config configs/mock.yaml
+study: persuasion
+run_name: persuasion_mock
+source_stages: results/mock/stages
+models:
+  A:
+    name: mockllm/A
+  B:
+    name: mockllm/B
+  L1:
+    name: mockllm/L1
+note_author: A
+monitors: [A, B, L1]
+large_monitors: [L1]
+conditions: [C0, E1, E3, E5, E3A, N3]
+seed: 1234
+max_connections: 4

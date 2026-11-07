@@ -355,3 +355,86 @@ def self_judge_task(items: list[dict[str, Any]], cfg: StudyConfig) -> Task:
         solver=self_judge_solver(cfg),
         scorer=stored_value("p_yes"),
     )
+
+
+# --- Study 2: notes from other agents and the persuasion monitor ----------------
+
+
+@solver
+def note_solver(cfg: StudyConfig):  # type: ignore[no-untyped-def]
+    """One note per sample; the prompt is built in ``persuasion.note_items``."""
+
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        md = state.metadata
+        config = GenerateConfig(
+            temperature=cfg.temperature,
+            seed=cfg.seed,
+            max_tokens=int(cfg.extra.get("max_tokens_note", 120)),
+        )
+        response, messages = await _generate(prompts.NOTE_SYSTEM, md["user"], config)
+        state.messages = messages
+        state.store.set(
+            RESULT_KEY,
+            {
+                **{k: md[k] for k in ("item_id", "task_id", "author", "kind", "persona", "note_type", "slot")},
+                "user": md["user"],
+                "response": response,
+            },
+        )
+        return state
+
+    return solve
+
+
+def note_task(items: list[dict[str, Any]], cfg: StudyConfig) -> Task:
+    samples = [
+        Sample(id=f"{it['item_id']}|{it['persona']}", input=it["task_id"], metadata=dict(it))
+        for it in items
+    ]
+    return Task(
+        name="justify",
+        dataset=MemoryDataset(samples),
+        solver=note_solver(cfg),
+        scorer=stored_value("slot"),
+    )
+
+
+@solver
+def persuasion_monitor_solver(cfg: StudyConfig):  # type: ignore[no-untyped-def]
+    """Same system prompt, settings and parser as the Study 1 monitor."""
+
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        md = state.metadata
+        config = GenerateConfig(
+            temperature=cfg.temperature, seed=cfg.seed, max_tokens=cfg.max_tokens_monitor
+        )
+        response, messages = await _generate(prompts.MONITOR_SYSTEM, md["user"], config)
+        state.messages = messages
+        verdict = parse_monitor(response)
+        state.store.set(
+            RESULT_KEY,
+            {
+                **{k: md[k] for k in ("item_id", "task_id", "author", "kind", "condition")},
+                "user": md["user"],
+                "response": response,
+                "score": verdict.score,
+                "reason": verdict.reason,
+                "valid": verdict.score is not None,
+            },
+        )
+        return state
+
+    return solve
+
+
+def persuasion_monitor_task(items: list[dict[str, Any]], cfg: StudyConfig) -> Task:
+    samples = [
+        Sample(id=f"{it['item_id']}|{it['condition']}", input=it["task_id"], metadata=dict(it))
+        for it in items
+    ]
+    return Task(
+        name="monitor_persuasion",
+        dataset=MemoryDataset(samples),
+        solver=persuasion_monitor_solver(cfg),
+        scorer=stored_value("score"),
+    )

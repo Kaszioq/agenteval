@@ -610,6 +610,37 @@ Also reported, not as hypothesis tests:
 
 If no large monitor finishes, H7 is reported as not tested.
 
+### Running Study 2
+
+```bash
+pip install -e ".[dev]"
+pytest -q
+
+# 5-task smoke test with the local models (read some notes and monitor answers by hand)
+agenteval run justify --config configs/persuasion_smoke.yaml
+agenteval run monitor_persuasion --config configs/persuasion_smoke.yaml
+agenteval analyze --config configs/persuasion_smoke.yaml
+
+# full run with the local monitors
+agenteval run justify --config configs/persuasion.yaml
+agenteval run monitor_persuasion --config configs/persuasion.yaml
+agenteval analyze --config configs/persuasion.yaml
+```
+
+Large monitors on a free API tier:
+1. `pip install -e ".[api]"`.
+2. Put the exact model id from the provider's model list into `configs/persuasion.yaml`.
+3. Set the key in the shell (for example `GROQ_API_KEY`), never in a file in the repository.
+4. Run one monitor at a time:
+
+```bash
+agenteval run monitor_persuasion --config configs/persuasion.yaml --monitor L1
+```
+
+Rows of the other monitors already in the stage file are kept. If the free tier
+runs out, run the same command again later. Finished calls come from the
+cache, so the stage continues where it stopped.
+
 ### Pre-existing vs new
 
 Apart requires prior work to be disclosed. Study 1 was built during an earlier

@@ -13,6 +13,9 @@ import yaml
 class ModelSpec:
     name: str
     base_url: str | None = None
+    # Per-model overrides, used for rate-limited free API tiers (Study 2).
+    max_connections: int | None = None
+    max_retries: int | None = None
 
 
 @dataclass(frozen=True)
@@ -52,7 +55,8 @@ _PATH_FIELDS = {"results_dir", "log_dir", "cache_dir"}
 def load_config(path: str | Path) -> StudyConfig:
     raw = yaml.safe_load(Path(path).read_text())
     models = {key: ModelSpec(**spec) for key, spec in raw.pop("models").items()}
-    if sorted(models) != ["A", "B"]:
+    # Study 1 compares exactly two models; Study 2 (persuasion) takes any list of monitors.
+    if raw.get("study") != "persuasion" and sorted(models) != ["A", "B"]:
         raise ValueError("config must define exactly two models, A and B")
     known = set(StudyConfig.__dataclass_fields__) - {"models", "extra"}
     kwargs: dict[str, Any] = {}
