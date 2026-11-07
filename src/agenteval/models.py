@@ -12,7 +12,9 @@ from agenteval.config import ModelSpec, StudyConfig
 FREE_PROVIDERS = frozenset({"ollama", "mockllm"})
 # Hosted providers with a free tier. Allowed only behind an explicit flag,
 # because the same key can also be billed once a paid plan is attached.
-FREE_TIER_PROVIDERS = frozenset({"groq"})
+# "dashscope" is Alibaba Cloud Model Studio through its OpenAI-compatible endpoint
+# (model names "openai-api/dashscope/<model>"), used only within the free quota.
+FREE_TIER_PROVIDERS = frozenset({"groq", "dashscope"})
 
 # Responses never expire: the key already covers model, messages, temperature and seed.
 CACHE_POLICY = CachePolicy(expiry=None)
@@ -25,7 +27,14 @@ class PaidEndpointBlocked(RuntimeError):
 def provider_of(model_name: str) -> str:
     if "/" not in model_name:
         raise ValueError(f"model name must look like 'provider/model', got {model_name!r}")
-    return model_name.split("/", 1)[0]
+    provider = model_name.split("/", 1)[0]
+    if provider == "openai-api":
+        # Generic OpenAI-compatible endpoint: the service named next decides the cost.
+        parts = model_name.split("/")
+        if len(parts) < 3:
+            raise ValueError(f"expected 'openai-api/<service>/<model>', got {model_name!r}")
+        return parts[1]
+    return provider
 
 
 def check_endpoint(
