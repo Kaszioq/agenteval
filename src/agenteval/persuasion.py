@@ -211,9 +211,12 @@ def _model_cfg(cfg: StudyConfig, model_id: str) -> StudyConfig:
             f"model {model_id!r} still has a placeholder name ({spec.name}); fill in the exact "
             "model id from the provider's model list first"
         )
+    changes: dict[str, Any] = {}
     if spec.max_connections:
-        return dataclasses.replace(cfg, max_connections=spec.max_connections)
-    return cfg
+        changes["max_connections"] = spec.max_connections
+    if spec.max_tokens:
+        changes["max_tokens_monitor"] = spec.max_tokens
+    return dataclasses.replace(cfg, **changes) if changes else cfg
 
 
 def run_justify(cfg: StudyConfig) -> list[dict[str, Any]]:
@@ -266,14 +269,19 @@ def conditions(cfg: StudyConfig) -> list[str]:
     return chosen
 
 
-def monitor_items(cfg: StudyConfig) -> list[dict[str, Any]]:
-    items = read_jsonl(stage_path(cfg, "items"))
+def monitor_items(
+    cfg: StudyConfig, only_conditions: list[str] | None = None, only_kinds: list[str] | None = None
+) -> list[dict[str, Any]]:
+    items = [
+        it for it in read_jsonl(stage_path(cfg, "items")) if not only_kinds or it["kind"] in only_kinds
+    ]
     notes: dict[str, dict[tuple[str, int], dict[str, Any]]] = {}
     for row in read_jsonl(stage_path(cfg, "justify")):
         notes.setdefault(row["item_id"], {})[row["note_type"], row["slot"]] = row
     out = []
+    chosen = [c for c in conditions(cfg) if not only_conditions or c in only_conditions]
     for it in items:
-        for condition in conditions(cfg):
+        for condition in chosen:
             out.append(
                 {
                     "item_id": it["item_id"],
@@ -291,13 +299,26 @@ def monitors(cfg: StudyConfig) -> list[str]:
     return [str(m) for m in cfg.extra.get("monitors", cfg.model_ids)]
 
 
-def run_monitor_persuasion(cfg: StudyConfig, only: list[str] | None = None) -> list[dict[str, Any]]:
-    """Score every item under every condition. With ``only``, run just those monitors and
-    keep the other monitors' rows already in the stage file (for rate-limited APIs)."""
+def run_monitor_persuasion(
+    cfg: StudyConfig,
+    only: list[str] | None = None,
+    only_conditions: list[str] | None = None,
+    only_kinds: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Score items under the conditions. For rate-limited APIs the work can be split:
+    ``only`` picks monitors, ``only_conditions`` and ``only_kinds`` pick a part of the
+    prompts. Rows already in the stage file for any other prompt are kept."""
     chosen = only or monitors(cfg)
-    items = monitor_items(cfg)
+    items = monitor_items(cfg, only_conditions, only_kinds)
+    if not items:
+        raise StageError("no prompts match the chosen conditions and kinds")
     path = stage_path(cfg, "monitor_persuasion")
-    kept = [r for r in read_jsonl(path) if r["monitor"] not in chosen] if path.exists() else []
+    running = {(m, f"{it['item_id']}|{it['condition']}") for m in chosen for it in items}
+    kept = (
+        [r for r in read_jsonl(path) if (r["monitor"], r["sample_id"]) not in running]
+        if path.exists()
+        else []
+    )
     rows = list(kept)
     for monitor in chosen:
         model_cfg = _model_cfg(cfg, monitor)
@@ -334,9 +355,15 @@ def run_monitor_persuasion(cfg: StudyConfig, only: list[str] | None = None) -> l
     return rows
 
 
-def run_persuasion_stage(cfg: StudyConfig, stage: str, only: list[str] | None = None) -> list[dict[str, Any]]:
+def run_persuasion_stage(
+    cfg: StudyConfig,
+    stage: str,
+    only: list[str] | None = None,
+    only_conditions: list[str] | None = None,
+    only_kinds: list[str] | None = None,
+) -> list[dict[str, Any]]:
     if stage == "justify":
         return run_justify(cfg)
     if stage == "monitor_persuasion":
-        return run_monitor_persuasion(cfg, only=only)
+        return run_monitor_persuasion(cfg, only, only_conditions, only_kinds)
     raise ValueError(f"unknown stage {stage!r}; choose from {STAGES}")

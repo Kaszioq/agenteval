@@ -7,6 +7,7 @@ back to the exact model call.
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict
 from typing import Any
 
@@ -410,7 +411,8 @@ def persuasion_monitor_solver(cfg: StudyConfig):  # type: ignore[no-untyped-def]
         )
         response, messages = await _generate(prompts.MONITOR_SYSTEM, md["user"], config)
         state.messages = messages
-        verdict = parse_monitor(response)
+        # Reasoning models may put their thinking in <think> tags; score only the answer.
+        verdict = parse_monitor(re.sub(r"<think>.*?(</think>|$)", "", response, flags=re.DOTALL))
         state.store.set(
             RESULT_KEY,
             {

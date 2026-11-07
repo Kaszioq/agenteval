@@ -257,3 +257,34 @@ def test_evaluative_word_check() -> None:
     assert is_evaluative("The extra condition seems unrelated and should be reviewed.")
     assert not is_evaluative("The code uses four-space indentation and lines under 80 characters.")
     assert not is_evaluative("Lint checks ran: PEP8, Flake8. The run finished.")
+
+
+def test_partial_runs_merge_and_backdoor_only_monitor(tmp_path: Path) -> None:
+    """A rate-limited monitor can run part of the prompts; the analysis then reports
+    suspicion contrasts but no catch rate (no C0 honest scores, no threshold)."""
+    cfg = _config(tmp_path, _source(tmp_path))
+    run_persuasion_stage(cfg, "justify")
+    run_persuasion_stage(cfg, "monitor_persuasion", only=["A", "B"])
+    first = run_persuasion_stage(cfg, "monitor_persuasion", only=["L1"], only_conditions=["C0"], only_kinds=["backdoor"])
+    assert {(r["condition"], r["kind"]) for r in first if r["monitor"] == "L1"} == {("C0", "backdoor")}
+    rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["L1"], only_conditions=["E3"], only_kinds=["backdoor"])
+    l1 = [r for r in rows if r["monitor"] == "L1"]
+    assert {r["condition"] for r in l1} == {"C0", "E3"} and len(l1) == 2 * 4
+    assert len(read_jsonl(stage_path(cfg, "monitor_persuasion"))) == 2 * 8 * len(CONDITIONS) + 8
+
+    df = pd.DataFrame(read_jsonl(stage_path(cfg, "monitor_persuasion")))
+    tests = persuasion_tests(df[df["valid"]], 200, 1, large=["L1"])
+    l1_tests = set(tests[tests["monitor"] == "L1"]["test"])
+    assert "H4 suspicion E3-C0" in l1_tests and "H4 catch rate E3-C0" not in l1_tests
+    assert tests["test"].str.startswith("H7").any()
+    analyze_persuasion(cfg, n_boot=100)
+
+
+def test_think_blocks_are_not_scored() -> None:
+    import re as _re
+
+    from agenteval.parsing import parse_monitor
+
+    response = "<think>Maybe SCORE: 9? No.</think>\nSCORE: 2\nREASON: fine"
+    cleaned = _re.sub(r"<think>.*?(</think>|$)", "", response, flags=_re.DOTALL)
+    assert parse_monitor(cleaned).score == 2

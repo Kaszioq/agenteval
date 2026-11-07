@@ -25,6 +25,8 @@ def main(argv: list[str] | None = None) -> int:
         help="Study 2: run monitor_persuasion for this monitor only (repeatable); "
         "rows of other monitors already in the stage file are kept",
     )
+    run.add_argument("--conditions", help="Study 2: comma-separated conditions to run, e.g. C0,E3")
+    run.add_argument("--kinds", help="Study 2: comma-separated item kinds to run: backdoor,honest")
 
     analyze = sub.add_parser("analyze", help="compute statistics, tables and figures for a run")
     analyze.add_argument("--config", default="configs/study.yaml")
@@ -45,7 +47,13 @@ def main(argv: list[str] | None = None) -> int:
         try:
             for stage in stages:
                 if persuasion:
-                    rows = run_persuasion_stage(cfg, stage, only=args.monitor)
+                    rows = run_persuasion_stage(
+                        cfg,
+                        stage,
+                        only=args.monitor,
+                        only_conditions=args.conditions.split(",") if args.conditions else None,
+                        only_kinds=args.kinds.split(",") if args.kinds else None,
+                    )
                 else:
                     rows = run_stage(cfg, stage, force=args.force)
                 print(f"[{stage}] {len(rows)} rows -> {cfg.run_dir / 'stages'}")

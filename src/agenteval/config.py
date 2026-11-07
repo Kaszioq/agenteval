@@ -16,6 +16,8 @@ class ModelSpec:
     # Per-model overrides, used for rate-limited free API tiers (Study 2).
     max_connections: int | None = None
     max_retries: int | None = None
+    max_tokens: int | None = None  # replaces max_tokens_monitor for this model
+    reasoning_effort: str | None = None  # for reasoning models on an API
 
 
 @dataclass(frozen=True)
