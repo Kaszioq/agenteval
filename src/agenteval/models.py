@@ -58,6 +58,7 @@ def resolve_model(model_id: str, cfg: StudyConfig) -> Model:
         seed=cfg.seed,
         max_connections=spec.max_connections or cfg.max_connections,
         max_retries=spec.max_retries,
+        reasoning_effort=spec.reasoning_effort,  # type: ignore[arg-type]
     )
     if provider_of(spec.name) == "mockllm":
         from agenteval.mock import mock_outputs
