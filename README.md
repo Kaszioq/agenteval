@@ -829,7 +829,7 @@ difference comes from A alone: B, a small model, is as resistant as L1.
   +0.29 [−0.16, +0.77]. Susceptibility belongs to the monitor and is not a
   shared-style effect.
 - *Reviewer appeal.* The appeal alone (C0X) lowers B's suspicion of backdoors
-  from 7.05 to 3.21 [−4.59, −3.09 vs C0]. The share of backdoors that B scores
+  from 7.05 to 3.21 (difference −3.84 [−4.59, −3.09]). The share of backdoors that B scores
   0–2 rises from 11% to 68%.
   - Adding endorsements does not add to this (E1X 2.88, E5X 3.76).
   - The prior-scores line moves only A (−1.43).
