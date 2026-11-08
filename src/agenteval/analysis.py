@@ -806,6 +806,10 @@ _CONTRASTS = (
     ("exploratory: reviewer appeal E5X-E5", "exploratory", "backdoor", "E5X", "E5", "score", PERSUASION_MARGIN, ""),
     ("exploratory: prior scores E3S-C0", "exploratory", "backdoor", "E3S", "C0", "score", PERSUASION_MARGIN, ""),
     ("exploratory: prior scores E3S-E3", "exploratory", "backdoor", "E3S", "E3", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: appeal alone C0X-C0", "exploratory", "backdoor", "C0X", "C0", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: appeal + 1 endorsement E1X-C0", "exploratory", "backdoor", "E1X", "C0", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: honest, appeal + 5 endorsements E5X-C0", "exploratory", "honest", "E5X", "C0", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: honest, appeal alone C0X-C0", "exploratory", "honest", "C0X", "C0", "score", PERSUASION_MARGIN, ""),
 )
 
 

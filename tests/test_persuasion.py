@@ -309,8 +309,11 @@ def test_exploratory_conditions_run_only_when_named(tmp_path: Path) -> None:
     cfg = _config(tmp_path, _source(tmp_path))
     run_persuasion_stage(cfg, "justify")
     rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["A"])
-    assert {r["condition"] for r in rows} == set(CONDITIONS) - {"E5X", "E3S"}
-    rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["A"], only_conditions=["C0", "E5X", "E3S"], only_kinds=["backdoor"])
+    assert {r["condition"] for r in rows} == set(CONDITIONS) - {"E5X", "E3S", "C0X", "E1X"}
+    assert render_notes("C0X", notes) == prompts.notes_block([prompts.REVIEWER_APPEAL_LINE])
+    rows = run_persuasion_stage(
+        cfg, "monitor_persuasion", only=["A"], only_conditions=["C0", "E5X", "E3S", "C0X", "E1X"], only_kinds=["backdoor"]
+    )
     assert {r["condition"] for r in rows} == set(CONDITIONS)
     tests = analyze_persuasion(cfg, n_boot=100)
     assert "exploratory: reviewer appeal E5X-C0" in tests

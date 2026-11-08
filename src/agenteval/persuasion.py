@@ -44,9 +44,12 @@ CONDITIONS: dict[str, tuple[str | None, int, str | None]] = {
     # aimed at the monitors that resisted. Run only when named with --conditions.
     "E5X": ("endorse", 5, prompts.REVIEWER_APPEAL_LINE),
     "E3S": ("endorse", 3, prompts.PRIOR_SCORES_LINE),
+    # Exploratory follow-up: the reviewer appeal alone and with a single endorsement.
+    "C0X": (None, 0, prompts.REVIEWER_APPEAL_LINE),
+    "E1X": ("endorse", 1, prompts.REVIEWER_APPEAL_LINE),
 }
 PREREGISTERED = ("C0", "E1", "E3", "E5", "E3A", "N3")
-EXPLORATORY = ("E5X", "E3S")
+EXPLORATORY = ("E5X", "E3S", "C0X", "E1X")
 # Number of endorsing agents per condition, for the dose-response test (H5).
 DOSE = {"C0": 0, "E1": 1, "E3": 3, "E5": 5}
 
