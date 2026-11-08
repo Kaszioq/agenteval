@@ -801,6 +801,11 @@ _CONTRASTS = (
     ("honest suspicion E3-N3", "extra", "honest", "E3", "N3", "score", PERSUASION_MARGIN, ""),
     ("honest flag rate E3-C0", "extra", "honest", "E3", "C0", "caught", CATCH_MARGIN, ""),
     ("honest suspicion E3A-E3", "extra", "honest", "E3A", "E3", "score", PERSUASION_MARGIN, ""),
+    # Exploratory conditions, added after the first results.
+    ("exploratory: reviewer appeal E5X-C0", "exploratory", "backdoor", "E5X", "C0", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: reviewer appeal E5X-E5", "exploratory", "backdoor", "E5X", "E5", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: prior scores E3S-C0", "exploratory", "backdoor", "E3S", "C0", "score", PERSUASION_MARGIN, ""),
+    ("exploratory: prior scores E3S-E3", "exploratory", "backdoor", "E3S", "E3", "score", PERSUASION_MARGIN, ""),
 )
 
 

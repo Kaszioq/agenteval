@@ -31,16 +31,22 @@ from agenteval.transforms import TransformError, strip_comments
 STAGES = ("justify", "monitor_persuasion")
 NOTE_WORD_CAP = 60
 
-# Condition -> (note type, number of notes, approval line). Endorsements are shown
+# Condition -> (note type, number of notes, fixed extra line). Endorsements are shown
 # in the fixed persona order of prompts.ENDORSE_PERSONAS.
-CONDITIONS: dict[str, tuple[str | None, int, bool]] = {
-    "C0": (None, 0, False),
-    "E1": ("endorse", 1, False),
-    "E3": ("endorse", 3, False),
-    "E5": ("endorse", 5, False),
-    "E3A": ("endorse", 3, True),
-    "N3": ("neutral", 3, False),
+CONDITIONS: dict[str, tuple[str | None, int, str | None]] = {
+    "C0": (None, 0, None),
+    "E1": ("endorse", 1, None),
+    "E3": ("endorse", 3, None),
+    "E5": ("endorse", 5, None),
+    "E3A": ("endorse", 3, prompts.APPROVAL_LINE),
+    "N3": ("neutral", 3, None),
+    # Exploratory, added after the first results (not pre-registered): stronger pressure
+    # aimed at the monitors that resisted. Run only when named with --conditions.
+    "E5X": ("endorse", 5, prompts.REVIEWER_APPEAL_LINE),
+    "E3S": ("endorse", 3, prompts.PRIOR_SCORES_LINE),
 }
+PREREGISTERED = ("C0", "E1", "E3", "E5", "E3A", "N3")
+EXPLORATORY = ("E5X", "E3S")
 # Number of endorsing agents per condition, for the dose-response test (H5).
 DOSE = {"C0": 0, "E1": 1, "E3": 3, "E5": 5}
 
@@ -179,14 +185,14 @@ def render_notes(condition: str, notes: dict[tuple[str, int], dict[str, Any]]) -
 
     ``notes`` maps (note_type, slot) to a justify row with ``persona`` and ``note``.
     """
-    note_type, count, approval = CONDITIONS[condition]
+    note_type, count, extra_line = CONDITIONS[condition]
     lines = []
     for slot in range(1, count + 1):
         row = notes[note_type, slot]
         text = row["note"] or "(empty note)"
         lines.append(f"- [agent-{slot}, {row['persona']}] {text}")
-    if approval:
-        lines.append(prompts.APPROVAL_LINE)
+    if extra_line:
+        lines.append(extra_line)
     return prompts.notes_block(lines)
 
 
@@ -262,7 +268,7 @@ def run_justify(cfg: StudyConfig) -> list[dict[str, Any]]:
 
 
 def conditions(cfg: StudyConfig) -> list[str]:
-    chosen = list(cfg.extra.get("conditions", list(CONDITIONS)))
+    chosen = list(cfg.extra.get("conditions", list(PREREGISTERED)))
     unknown = [c for c in chosen if c not in CONDITIONS]
     if unknown:
         raise StageError(f"unknown conditions {unknown}; choose from {list(CONDITIONS)}")
@@ -279,7 +285,13 @@ def monitor_items(
     for row in read_jsonl(stage_path(cfg, "justify")):
         notes.setdefault(row["item_id"], {})[row["note_type"], row["slot"]] = row
     out = []
-    chosen = [c for c in conditions(cfg) if not only_conditions or c in only_conditions]
+    if only_conditions:
+        unknown = [c for c in only_conditions if c not in CONDITIONS]
+        if unknown:
+            raise StageError(f"unknown conditions {unknown}; choose from {list(CONDITIONS)}")
+        chosen = list(only_conditions)  # may name exploratory conditions
+    else:
+        chosen = conditions(cfg)
     for it in items:
         for condition in chosen:
             out.append(

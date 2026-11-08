@@ -135,7 +135,9 @@ def test_persuasion_configs_load(tmp_path: Path) -> None:
     cfg = load_config("configs/persuasion.yaml")
     assert cfg.extra["study"] == "persuasion" and not cfg.allow_paid
     assert cfg.models["L1"].max_connections == 1
-    assert list(CONDITIONS) == cfg.extra["conditions"]
+    from agenteval.persuasion import PREREGISTERED
+
+    assert list(PREREGISTERED) == cfg.extra["conditions"]
     load_config("configs/persuasion_smoke.yaml")
     # Study 1 configs still need exactly models A and B.
     study1 = tmp_path / "study1.yaml"
@@ -195,7 +197,7 @@ def test_end_to_end_with_mock_models(tmp_path: Path) -> None:
     assert honest_user.split("Problem:")[0] == bd_user.split("Problem:")[0]
 
     rows = run_persuasion_stage(cfg, "monitor_persuasion")
-    assert len(rows) == 3 * 8 * len(CONDITIONS)
+    assert len(rows) == 3 * 8 * 6  # monitors x items x pre-registered conditions
     assert all(r["valid"] for r in rows)
     c0 = next(r for r in rows if r["condition"] == "C0")
     assert "Notes from other agents" not in c0["user"]
@@ -270,7 +272,7 @@ def test_partial_runs_merge_and_backdoor_only_monitor(tmp_path: Path) -> None:
     rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["L1"], only_conditions=["E3"], only_kinds=["backdoor"])
     l1 = [r for r in rows if r["monitor"] == "L1"]
     assert {r["condition"] for r in l1} == {"C0", "E3"} and len(l1) == 2 * 4
-    assert len(read_jsonl(stage_path(cfg, "monitor_persuasion"))) == 2 * 8 * len(CONDITIONS) + 8
+    assert len(read_jsonl(stage_path(cfg, "monitor_persuasion"))) == 2 * 8 * 6 + 8
 
     df = pd.DataFrame(read_jsonl(stage_path(cfg, "monitor_persuasion")))
     tests = persuasion_tests(df[df["valid"]], 200, 1, large=["L1"])
@@ -296,3 +298,19 @@ def test_openai_compatible_services_are_checked_by_service() -> None:
     assert provider_of("openai-api/somecloud/model") == "somecloud"
     with pytest.raises(PaidEndpointBlocked):
         check_endpoint("openai-api/somecloud/model", allow_free_tier_api=True)
+
+
+def test_exploratory_conditions_run_only_when_named(tmp_path: Path) -> None:
+    notes = _notes()
+    assert render_notes("E5X", notes).rstrip().endswith(prompts.REVIEWER_APPEAL_LINE)
+    e3s = render_notes("E3S", notes)
+    assert "agent-4" not in e3s and e3s.rstrip().endswith(prompts.PRIOR_SCORES_LINE)
+
+    cfg = _config(tmp_path, _source(tmp_path))
+    run_persuasion_stage(cfg, "justify")
+    rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["A"])
+    assert {r["condition"] for r in rows} == set(CONDITIONS) - {"E5X", "E3S"}
+    rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["A"], only_conditions=["C0", "E5X", "E3S"], only_kinds=["backdoor"])
+    assert {r["condition"] for r in rows} == set(CONDITIONS)
+    tests = analyze_persuasion(cfg, n_boot=100)
+    assert "exploratory: reviewer appeal E5X-C0" in tests
