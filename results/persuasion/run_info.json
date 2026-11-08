@@ -1,0 +1,143 @@
+{
+  "config": {
+    "allow_free_tier_api": true,
+    "allow_paid": false,
+    "backdoor_attempts": 3,
+    "cache_dir": ".cache\\inspect",
+    "exec_timeout": 10.0,
+    "extra": {
+      "conditions": [
+        "C0",
+        "E1",
+        "E3",
+        "E5",
+        "E3A",
+        "N3"
+      ],
+      "large_monitors": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "max_tokens_note": 120,
+      "monitors": [
+        "A",
+        "B"
+      ],
+      "note_author": "A",
+      "sample_time_limit": 600,
+      "source_stages": "results/study/stages",
+      "study": "persuasion"
+    },
+    "log_dir": "logs",
+    "max_connections": 1,
+    "max_tokens_author": 1024,
+    "max_tokens_judge": 16,
+    "max_tokens_monitor": 160,
+    "models": {
+      "A": {
+        "base_url": null,
+        "max_connections": null,
+        "max_retries": null,
+        "max_tokens": null,
+        "name": "ollama/qwen2.5-coder:7b",
+        "reasoning_effort": null
+      },
+      "B": {
+        "base_url": null,
+        "max_connections": null,
+        "max_retries": null,
+        "max_tokens": null,
+        "name": "ollama/llama3.1:8b",
+        "reasoning_effort": null
+      },
+      "L1": {
+        "base_url": null,
+        "max_connections": 1,
+        "max_retries": 8,
+        "max_tokens": 1024,
+        "name": "groq/openai/gpt-oss-120b",
+        "reasoning_effort": "low"
+      },
+      "L2": {
+        "base_url": null,
+        "max_connections": 1,
+        "max_retries": 8,
+        "max_tokens": 1024,
+        "name": "groq/qwen/qwen3.8-27b",
+        "reasoning_effort": "low"
+      },
+      "L3": {
+        "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "max_connections": 2,
+        "max_retries": 8,
+        "max_tokens": 1024,
+        "name": "openai-api/dashscope/qwen3.8-max-0902",
+        "reasoning_effort": null
+      },
+      "L4": {
+        "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "max_connections": 2,
+        "max_retries": 8,
+        "max_tokens": 1024,
+        "name": "openai-api/dashscope/kimi-k3.1-pro",
+        "reasoning_effort": null
+      }
+    },
+    "problem_ids": null,
+    "problem_limit": null,
+    "results_dir": "results",
+    "retry_temperature": 0.7,
+    "run_name": "persuasion",
+    "seed": 1234,
+    "temperature": 0.0
+  },
+  "model_digests": {
+    "A": {
+      "details": {
+        "context_length": 32768,
+        "embedding_length": 3584,
+        "families": [
+          "qwen2"
+        ],
+        "family": "qwen2",
+        "format": "gguf",
+        "parameter_size": "7.6B",
+        "parent_model": "",
+        "quantization_level": "Q4_K_M",
+        "runner": "ggml"
+      },
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+      "name": "qwen2.5-coder:7b",
+      "size": 4683087561
+    },
+    "B": {
+      "details": {
+        "context_length": 131072,
+        "embedding_length": 4096,
+        "families": [
+          "llama"
+        ],
+        "family": "llama",
+        "format": "gguf",
+        "parameter_size": "8.0B",
+        "parent_model": "",
+        "quantization_level": "Q4_K_M",
+        "runner": "ggml"
+      },
+      "digest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+      "name": "llama3.1:8b",
+      "size": 4920753328
+    }
+  },
+  "stages": {
+    "justify": "2026-11-07T23:55:16+00:00",
+    "monitor_persuasion": "2026-11-08T01:20:11+00:00"
+  },
+  "versions": {
+    "inspect_ai": "0.3.284",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10"
+  }
+}
