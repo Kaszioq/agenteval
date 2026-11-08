@@ -681,6 +681,9 @@ def _persuasion_frame(cfg: StudyConfig) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
     df = pd.DataFrame(read_jsonl(path))
+    # Only monitors still defined in the config (rows of a dropped provider stay in the
+    # stage file for the record but are not analysed).
+    df = df[df["monitor"].isin(cfg.models)]
     return df[df["valid"]].copy()
 
 
@@ -713,8 +716,9 @@ def _dose_slope(
     scored in every dose condition; the bootstrap resamples tasks."""
     from agenteval.persuasion import DOSE
 
-    present = [c for c in DOSE if c in set(g["condition"])]
-    if len(present) < 2:
+    present = list(DOSE)
+    if not set(present) <= set(g["condition"]):
+        # H5 needs every dose (0, 1, 3, 5); a monitor run on fewer conditions gets no slope.
         return float("nan"), float("nan"), float("nan"), 0
     wide = g[g["condition"].isin(present)].pivot_table(
         index=["item_id", "task_id"], columns="condition", values="score", aggfunc="first"
