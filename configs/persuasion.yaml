@@ -36,7 +36,7 @@ max_tokens_note: 120
 max_tokens_monitor: 160
 max_connections: 1            # Ollama serves one request at a time by default
 sample_time_limit: 600
-allow_free_tier_api: true     # free API tiers only; keys from environment variables
+allow_free_tier_api: false    # API monitors stopped on 8 Nov 2026 (charges appeared on the Groq account)
 allow_paid: false             # hard budget rule: never set true
 results_dir: results
 log_dir: logs
