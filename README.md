@@ -740,6 +740,12 @@ adds a note author x monitor table (`cross_author.csv`, figure
 gpt-oss-120b cannot write notes: that would take 1,600 calls, which is more
 than its free daily limit.
 
+**Note on reruns.** The follow-up asked again for monitor B's C0 scores on
+honest items. Two of those 100 answers came back different (8 → 2 and 8 → 0),
+because Ollama is not fully deterministic on a GPU even at temperature 0. The
+stage file keeps the original answers from the pre-registered run, so every
+reported number uses the same C0 baseline.
+
 ### Running Study 2
 
 ```bash
