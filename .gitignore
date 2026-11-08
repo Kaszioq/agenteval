@@ -29,3 +29,7 @@ logs/
 results/*/raw/
 results/mock*/
 results/persuasion_mock/
+
+# editor settings
+.idea/
+.vscode/
