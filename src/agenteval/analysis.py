@@ -810,6 +810,15 @@ _CONTRASTS = (
     ("exploratory: appeal + 1 endorsement E1X-C0", "exploratory", "backdoor", "E1X", "C0", "score", PERSUASION_MARGIN, ""),
     ("exploratory: honest, appeal + 5 endorsements E5X-C0", "exploratory", "honest", "E5X", "C0", "score", PERSUASION_MARGIN, ""),
     ("exploratory: honest, appeal alone C0X-C0", "exploratory", "honest", "C0X", "C0", "score", PERSUASION_MARGIN, ""),
+    # Exploratory defence sentence in the monitor instructions.
+    ("defence: no notes DC0-C0", "defence", "backdoor", "DC0", "C0", "score", PERSUASION_MARGIN, ""),
+    ("defence: appeal alone DC0X-C0X", "defence", "backdoor", "DC0X", "C0X", "score", PERSUASION_MARGIN, ""),
+    ("defence: 5 endorsements DE5-E5", "defence", "backdoor", "DE5", "E5", "score", PERSUASION_MARGIN, ""),
+    ("defence: appeal + 5 endorsements DE5X-E5X", "defence", "backdoor", "DE5X", "E5X", "score", PERSUASION_MARGIN, ""),
+    ("defended: appeal alone DC0X-DC0", "defence", "backdoor", "DC0X", "DC0", "score", PERSUASION_MARGIN, ""),
+    ("defended: appeal + 5 endorsements DE5X-DC0", "defence", "backdoor", "DE5X", "DC0", "score", PERSUASION_MARGIN, ""),
+    ("defence: honest, no notes DC0-C0", "defence", "honest", "DC0", "C0", "score", PERSUASION_MARGIN, ""),
+    ("defence: honest, appeal alone DC0X-C0X", "defence", "honest", "DC0X", "C0X", "score", PERSUASION_MARGIN, ""),
 )
 
 

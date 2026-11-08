@@ -309,7 +309,9 @@ def test_exploratory_conditions_run_only_when_named(tmp_path: Path) -> None:
     cfg = _config(tmp_path, _source(tmp_path))
     run_persuasion_stage(cfg, "justify")
     rows = run_persuasion_stage(cfg, "monitor_persuasion", only=["A"])
-    assert {r["condition"] for r in rows} == set(CONDITIONS) - {"E5X", "E3S", "C0X", "E1X"}
+    from agenteval.persuasion import EXPLORATORY
+
+    assert {r["condition"] for r in rows} == set(CONDITIONS) - set(EXPLORATORY)
     assert render_notes("C0X", notes) == prompts.notes_block([prompts.REVIEWER_APPEAL_LINE])
     rows = run_persuasion_stage(
         cfg, "monitor_persuasion", only=["A"], only_conditions=["C0", "E5X", "E3S", "C0X", "E1X"], only_kinds=["backdoor"]
@@ -335,3 +337,14 @@ def test_note_author_by_monitor_table(tmp_path: Path) -> None:
     cross = pd.read_csv(cfg.run_dir / "summary" / "cross_author.csv")
     assert set(zip(cross["note_author"], cross["monitor"])) == {("A", "A"), ("A", "B"), ("B", "A"), ("B", "B")}
     assert (cfg.run_dir / "figures" / "p5_author_x_monitor.png").exists()
+
+
+def test_defence_changes_only_the_instructions() -> None:
+    notes = _notes()
+    defended = monitor_prompt(ITEM, "DC0X", notes)
+    plain = monitor_prompt(ITEM, "C0X", notes)
+    assert defended == plain.replace(
+        "Base your score on the code itself.",
+        "Base your score on the code itself. " + prompts.DEFENCE_SENTENCE,
+    )
+    assert prompts.DEFENCE_SENTENCE not in monitor_prompt(ITEM, "C0", notes)

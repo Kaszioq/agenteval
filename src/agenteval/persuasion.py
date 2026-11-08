@@ -47,9 +47,16 @@ CONDITIONS: dict[str, tuple[str | None, int, str | None]] = {
     # Exploratory follow-up: the reviewer appeal alone and with a single endorsement.
     "C0X": (None, 0, prompts.REVIEWER_APPEAL_LINE),
     "E1X": ("endorse", 1, prompts.REVIEWER_APPEAL_LINE),
+    # Exploratory defence: the same notes, with DEFENCE_SENTENCE in the monitor instructions.
+    "DC0": (None, 0, None),
+    "DE5": ("endorse", 5, None),
+    "DC0X": (None, 0, prompts.REVIEWER_APPEAL_LINE),
+    "DE5X": ("endorse", 5, prompts.REVIEWER_APPEAL_LINE),
 }
+# Defended condition -> the undefended condition with the same notes.
+DEFENDED = {"DC0": "C0", "DE5": "E5", "DC0X": "C0X", "DE5X": "E5X"}
 PREREGISTERED = ("C0", "E1", "E3", "E5", "E3A", "N3")
-EXPLORATORY = ("E5X", "E3S", "C0X", "E1X")
+EXPLORATORY = ("E5X", "E3S", "C0X", "E1X", *DEFENDED)
 # Number of endorsing agents per condition, for the dose-response test (H5).
 DOSE = {"C0": 0, "E1": 1, "E3": 3, "E5": 5}
 
@@ -200,7 +207,8 @@ def render_notes(condition: str, notes: dict[tuple[str, int], dict[str, Any]]) -
 
 
 def monitor_prompt(item: dict[str, Any], condition: str, notes: dict[tuple[str, int], dict[str, Any]]) -> str:
-    return prompts.PERSUASION_MONITOR_USER.format(
+    template = prompts.DEFENDED_MONITOR_USER if condition in DEFENDED else prompts.PERSUASION_MONITOR_USER
+    return template.format(
         prompt=prompts.problem_text(item["prompt"]),
         code=item["code"].rstrip("\n"),
         notes=render_notes(condition, notes),
