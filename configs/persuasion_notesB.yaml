@@ -1,0 +1,33 @@
+# Study 2, exploratory (added 8 Nov 2026 after the first results): the same design with
+# notes written by model B (Llama) instead of model A (Qwen). Together with
+# configs/persuasion.yaml this gives a note author x monitor table. Same items, same
+# prompts; C0 prompts are identical across the two runs, so they come from the cache.
+study: persuasion
+run_name: persuasion_notesB
+source_stages: results/study/stages
+models:
+  A:
+    name: ollama/qwen2.5-coder:7b
+  B:
+    name: ollama/llama3.1:8b
+  L1:
+    name: groq/openai/gpt-oss-120b
+    max_connections: 1
+    max_retries: 8
+    max_tokens: 1024
+    reasoning_effort: low
+note_author: B
+monitors: [A, B]
+large_monitors: [L1]
+conditions: [C0, E1, E3, E5, E3A, N3]
+seed: 1234
+temperature: 0.0
+max_tokens_note: 120
+max_tokens_monitor: 160
+max_connections: 1
+sample_time_limit: 600
+allow_free_tier_api: true
+allow_paid: false
+results_dir: results
+log_dir: logs
+cache_dir: .cache/inspect

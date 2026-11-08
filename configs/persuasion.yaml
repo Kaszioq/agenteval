@@ -28,6 +28,8 @@ note_author: A                # one fixed model writes every note
 monitors: [A, B]              # L1 / L2 are run one at a time with --monitor (see README)
 large_monitors: [L1, L2]      # the group compared with A and B in H7
 conditions: [C0, E1, E3, E5, E3A, N3]
+# Exploratory: runs with other note authors, compared in a note author x monitor table.
+compare_runs: [persuasion_notesB]
 seed: 1234
 temperature: 0.0
 max_tokens_note: 120

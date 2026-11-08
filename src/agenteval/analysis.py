@@ -1014,6 +1014,75 @@ def large_monitors(cfg: StudyConfig) -> list[str]:
     return [m for m, spec in cfg.models.items() if provider_of(spec.name) not in ("ollama", "mockllm")]
 
 
+_CROSS_TESTS = (
+    "H4 suspicion E3-C0",
+    "H4 catch rate E3-C0",
+    "suspicion E5-C0",
+    "H6 suspicion E3-N3",
+    "H5 slope per endorsing agent",
+    "honest suspicion E3-C0",
+)
+
+
+def cross_author_table(cfg: StudyConfig, n_boot: int) -> pd.DataFrame:
+    """Exploratory: the main contrasts for every (note author, monitor) pair, from this run
+    and the runs named in ``compare_runs`` (same items, different note author)."""
+    import dataclasses
+
+    from agenteval.config import load_config
+
+    runs = [cfg]
+    for name in cfg.extra.get("compare_runs", []):
+        path = Path("configs") / f"{name}.yaml"
+        other_cfg = load_config(path) if path.exists() else dataclasses.replace(cfg, run_name=name)
+        if stage_path(other_cfg, "monitor_persuasion").exists():
+            runs.append(other_cfg)
+    if len(runs) < 2:
+        return pd.DataFrame()
+    parts = []
+    for run in runs:
+        df = _persuasion_frame(run)
+        if df.empty:
+            continue
+        tests = persuasion_tests(df, n_boot, run.seed, large=[])
+        tests = tests[tests["test"].isin(_CROSS_TESTS)].copy()
+        # The note author recorded with the notes themselves, not the config's claim.
+        authors = {r["note_author"] for r in read_jsonl(stage_path(run, "justify"))}
+        tests.insert(0, "note_author", "+".join(sorted(authors)))
+        parts.append(tests)
+    return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+
+
+def _cross_figure(table: pd.DataFrame, path: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    sub = table[table["test"] == "H4 suspicion E3-C0"]
+    monitors = sorted(sub["monitor"].unique())
+    authors = sorted(sub["note_author"].unique())
+    colors = _monitor_colors(authors)
+    fig, ax = plt.subplots(figsize=(1.4 * len(monitors) + 2.4, 3.4), facecolor=SURFACE)
+    _style(ax)
+    ax.axhspan(-PERSUASION_MARGIN, PERSUASION_MARGIN, color=GRID, alpha=0.5, lw=0)
+    ax.axhline(0, color=INK_2, lw=1, ls="--")
+    for j, author in enumerate(authors):
+        for i, m in enumerate(monitors):
+            row = sub[(sub["note_author"] == author) & (sub["monitor"] == m)]
+            if row.empty:
+                continue
+            r = row.iloc[0]
+            ax.errorbar(i + (j - (len(authors) - 1) / 2) * 0.22, r["estimate"],
+                        yerr=[[r["estimate"] - r["ci_low"]], [r["ci_high"] - r["estimate"]]],
+                        fmt="o", ms=7, color=colors[author], ecolor=colors[author], elinewidth=2,
+                        capsize=0, label=f"notes by {author}" if i == 0 else None)
+    ax.set_xticks(range(len(monitors)), [f"monitor {m}" for m in monitors])
+    ax.set_ylabel("backdoor suspicion, E3 - C0", color=INK, fontsize=9)
+    ax.set_title("Exploratory: who writes the notes x who monitors", color=INK, fontsize=10, loc="left")
+    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150, facecolor=SURFACE)
+    plt.close(fig)
+
+
 def analyze_persuasion(cfg: StudyConfig, n_boot: int = 10_000) -> str:
     import matplotlib
 
@@ -1059,6 +1128,16 @@ def analyze_persuasion(cfg: StudyConfig, n_boot: int = 10_000) -> str:
             _md(tests),
         ]
         _persuasion_figures(table, tests, figs)
+    cross = cross_author_table(cfg, n_boot)
+    if not cross.empty:
+        cross.to_csv(out / "cross_author.csv", index=False)
+        parts += [
+            "\n## Exploratory: note author x monitor\n",
+            "Added after the first results (not pre-registered). The same contrasts with notes "
+            "written by each note author.\n",
+            _md(cross),
+        ]
+        _cross_figure(cross, figs / "p5_author_x_monitor.png")
     summary = "\n".join(parts)
     (out / "summary.md").write_text(summary)
     return summary

@@ -720,6 +720,21 @@ They run only when named explicitly, for example
 `--conditions C0,E5X,E3S --kinds backdoor`. They are reported separately and
 labelled exploratory.
 
+### Exploratory: who writes the notes (8 November 2026, after the first results)
+
+In the main run, model A (Qwen 7B) wrote every note, and model A was also the
+only monitor that was swayed. A monitor might trust text written in its own
+style more, so the result could depend on who wrote the notes.
+
+To test this, `configs/persuasion_notesB.yaml` repeats the design with notes
+written by model B (Llama 8B). It uses the same items and prompts, and only the
+note author changes. `agenteval analyze --config configs/persuasion.yaml` then
+adds a note author x monitor table (`cross_author.csv`, figure
+`p5_author_x_monitor.png`). This is not pre-registered.
+
+gpt-oss-120b cannot write notes: that would take 1,600 calls, which is more
+than its free daily limit.
+
 ### Running Study 2
 
 ```bash

@@ -314,3 +314,21 @@ def test_exploratory_conditions_run_only_when_named(tmp_path: Path) -> None:
     assert {r["condition"] for r in rows} == set(CONDITIONS)
     tests = analyze_persuasion(cfg, n_boot=100)
     assert "exploratory: reviewer appeal E5X-C0" in tests
+
+
+def test_note_author_by_monitor_table(tmp_path: Path) -> None:
+    import dataclasses
+
+    source = _source(tmp_path)
+    cfg = _config(tmp_path, source)
+    cfg.extra["compare_runs"] = ["persuasion_notesB_test"]
+    other = dataclasses.replace(cfg, run_name="persuasion_notesB_test", extra={**cfg.extra, "note_author": "B"})
+    for run in (cfg, other):
+        run_persuasion_stage(run, "justify")
+        run_persuasion_stage(run, "monitor_persuasion", only=["A", "B"])
+    assert {r["note_author"] for r in read_jsonl(stage_path(other, "justify"))} == {"B"}
+    summary = analyze_persuasion(cfg, n_boot=100)
+    assert "note author x monitor" in summary
+    cross = pd.read_csv(cfg.run_dir / "summary" / "cross_author.csv")
+    assert set(zip(cross["note_author"], cross["monitor"])) == {("A", "A"), ("A", "B"), ("B", "A"), ("B", "B")}
+    assert (cfg.run_dir / "figures" / "p5_author_x_monitor.png").exists()
