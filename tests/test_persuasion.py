@@ -316,7 +316,9 @@ def test_exploratory_conditions_run_only_when_named(tmp_path: Path) -> None:
     rows = run_persuasion_stage(
         cfg, "monitor_persuasion", only=["A"], only_conditions=["C0", "E5X", "E3S", "C0X", "E1X"], only_kinds=["backdoor"]
     )
-    assert {r["condition"] for r in rows} == set(CONDITIONS)
+    from agenteval.persuasion import DEFENDED
+
+    assert {r["condition"] for r in rows} == set(CONDITIONS) - set(DEFENDED)
     tests = analyze_persuasion(cfg, n_boot=100)
     assert "exploratory: reviewer appeal E5X-C0" in tests
 
