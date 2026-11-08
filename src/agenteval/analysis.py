@@ -869,17 +869,16 @@ def _scale_test(
 ) -> dict[str, Any] | None:
     """H7: mean H4 effect (E3 - C0 on backdoors) of the large monitors minus that of the
     local monitors. Each group's effect is the mean of its monitors' effects."""
-    monitors = sorted(df["monitor"].unique())
+    effects = {}
+    for m in sorted(df["monitor"].unique()):
+        diff, tasks = _paired_diff(df[(df["monitor"] == m) & (df["kind"] == "backdoor")], "E3", "C0", "score")
+        if len(diff):  # a monitor without both conditions does not enter H7
+            effects[m] = (diff, tasks)
+    monitors = sorted(effects)
     big = [m for m in monitors if m in large]
     small = [m for m in monitors if m not in large]
     if not big or not small:
         return None
-    effects = {}
-    for m in monitors:
-        diff, tasks = _paired_diff(df[(df["monitor"] == m) & (df["kind"] == "backdoor")], "E3", "C0", "score")
-        if len(diff) == 0:
-            return None
-        effects[m] = (diff, tasks)
     all_tasks = np.unique(np.concatenate([t for _, t in effects.values()]))
     index = {t: i for i, t in enumerate(all_tasks)}
     sums = {m: np.bincount([index[t] for t in tasks], weights=d, minlength=len(all_tasks)) for m, (d, tasks) in effects.items()}

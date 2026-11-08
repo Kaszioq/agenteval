@@ -125,6 +125,7 @@ Paired by item; 95% bootstrap intervals resampling tasks. Negative = lower with 
 | B | honest slope per endorsing agent | extra | honest | 100 | 0.030 | -0.058 | 0.124 |  | inconclusive | higher with notes |
 | L1 | H4 suspicion E3-C0 | H4 | backdoor | 100 | -0.040 | -0.283 | 0.198 | < 0 | no effect | lower with notes |
 | L1 | H6 suspicion E3-N3 | H6 | backdoor | 100 | 0.180 | -0.041 | 0.404 | < 0 | no effect | higher with notes |
+| L1 vs A+B | H7 large minus local, E3-C0 effect | H7 | backdoor | 100 | 0.380 | 0.015 | 0.735 | > 0 | effect | large less affected |
 
 
 ## Exploratory: note author x monitor
