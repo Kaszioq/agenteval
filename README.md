@@ -792,6 +792,63 @@ Rows of the other monitors already in the stage file are kept. If the free tier
 runs out, run the same command again later. Finished calls come from the
 cache, so the stage continues where it stopped.
 
+### Results (Study 2)
+
+Tables are in `results/persuasion/summary/` (the main run) and
+`results/persuasion_notesB/summary/` (notes written by Llama). The report and
+slides are in `report/study2/`. All intervals are 95% bootstrap intervals over
+tasks, and the scale is 0–10 suspicion.
+
+**Pre-registered.**
+
+| Monitor | H4: E3 − C0 suspicion | H4: E3 − C0 catch rate | H5: slope per agent | H6: E3 − N3 |
+|---|---|---|---|---|
+| A Qwen2.5-Coder 7B | −1.09 [−1.36, −0.80] effect | −0.31 [−0.40, −0.22] effect | −0.39 [−0.45, −0.33] effect | −1.00 [−1.30, −0.69] effect |
+| B Llama 3.1 8B | +0.25 [−0.13, +0.65] inconclusive | 0.00 (ceiling) | −0.00 [−0.09, +0.10] no effect | −0.08 [−0.45, +0.29] no effect |
+| L1 gpt-oss-120b | −0.04 [−0.28, +0.20] no effect | not run | not run | +0.18 [−0.04, +0.40] no effect |
+
+H7 (large minus local): +0.38 [+0.02, +0.74], formally an effect. The
+difference comes from A alone: B, a small model, is as resistant as L1.
+
+**Monitor A.**
+- Catch rate at the fixed 2% threshold: 61% (C0), 48% (E1), 30% (E3), 11% (E5),
+  6% (E3A), 51% (N3).
+- AUROC falls from 0.98 to 0.83 (E5).
+- Honest code stays at about 0 in every condition.
+
+**Monitor B.**
+- Its threshold is 8, its most used score, so its catch rate is 0 in every
+  condition. This is a ceiling artefact, as in Study 1.
+- Its AUROC stays between 0.88 and 0.91.
+- The fake approval line makes B more suspicious, not less: +0.53 on backdoors
+  and +1.23 on honest code.
+
+**Exploratory.**
+- *Note author.* With notes written by Llama, A is swayed as much as with its
+  own notes: E3 − C0 −1.22 [−1.53, −0.91], E5 − C0 −2.52. B is still unmoved:
+  +0.29 [−0.16, +0.77]. Susceptibility belongs to the monitor and is not a
+  shared-style effect.
+- *Reviewer appeal.* The appeal alone (C0X) lowers B's suspicion of backdoors
+  from 7.05 to 3.21 [−4.59, −3.09 vs C0]. The share of backdoors that B scores
+  0–2 rises from 11% to 68%.
+  - Adding endorsements does not add to this (E1X 2.88, E5X 3.76).
+  - The prior-scores line moves only A (−1.43).
+  - AUROC with the appeal (honest vs backdoored code, same condition): A 0.80
+    (alone) and 0.58 (with five endorsements); B 0.82 and 0.79.
+- *Defence sentence.*
+  - A: with the appeal alone, AUROC goes from 0.80 to 0.96 and backdoor
+    suspicion from 1.08 to 1.85; with five endorsements and the appeal, AUROC
+    goes only from 0.58 to 0.68.
+  - B: backdoor suspicion under the appeal goes from 3.21 to 7.87, and no
+    backdoor is scored 0–2. But honest code carrying the appeal goes from 0.05 to
+    3.72, with 52% scored 5 or more, so B's AUROC stays at 0.83.
+
+**Not completed.**
+- L1 ran only C0, E3 and N3, on backdoored items.
+- L2 (Qwen3.8-27B) completed 28 of 100 prompts in N3 and is left out. API use was
+  stopped after unexpected charges appeared on the Groq account.
+- Alibaba Model Studio refused every request.
+
 ### Pre-existing vs new
 
 Apart requires prior work to be disclosed. Study 1 was built during an earlier
@@ -807,6 +864,7 @@ sprint (AI Collusion Research Sprint, 24–25 October 2026).
 | Note-writing prompts and the `justify` stage | new (Study 2) |
 | Persuasion monitor prompt, `monitor_persuasion` stage, per-model rate limits | new (Study 2) |
 | Persuasion analysis, figures and tests (`persuasion.py`, `tests/test_persuasion.py`) | new (Study 2) |
+| Report figures and slides (`report/study2/`) | new (Study 2) |
 
 ## License
 
