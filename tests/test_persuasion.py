@@ -293,9 +293,6 @@ def test_think_blocks_are_not_scored() -> None:
 def test_openai_compatible_services_are_checked_by_service() -> None:
     from agenteval.models import provider_of
 
-    assert provider_of("openai-api/dashscope/qwen3.8-max-0902") == "dashscope"
+    assert provider_of("openai-api/somecloud/model") == "somecloud"
     with pytest.raises(PaidEndpointBlocked):
-        check_endpoint("openai-api/dashscope/qwen3.8-max-0902")
-    check_endpoint("openai-api/dashscope/qwen3.8-max-0902", allow_free_tier_api=True)
-    with pytest.raises(PaidEndpointBlocked):  # any other service stays blocked
         check_endpoint("openai-api/somecloud/model", allow_free_tier_api=True)

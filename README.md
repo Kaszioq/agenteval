@@ -678,15 +678,12 @@ were read from the providers' consoles:
 |---|---|---|---|
 | L1 | `openai/gpt-oss-120b` | Groq | 1K requests and 200K tokens per day |
 | L2 | `qwen/qwen3.8-27b` | Groq | 1K requests and 200K tokens per day |
-| L3 | `qwen3.8-max-0902` | Alibaba Cloud Model Studio | 1M tokens in total |
-| L4 | `kimi-k3.1-pro` | Alibaba Cloud Model Studio | 1M tokens in total |
 
 **Setup.**
 - L1 and L2 are reasoning models. They run with low reasoning effort and up to
   1,024 output tokens.
 - For every monitor, anything inside `<think>` tags is removed before the score
   is read.
-- On Alibaba, "Stop-on-Exhaust" is turned on, so nothing can be billed.
 
 **Budget.** One monitor prompt is about 300–550 input tokens, plus reasoning
 and the answer. The Groq monitors can therefore answer only about 250 prompts a
@@ -699,6 +696,10 @@ by the freeze is reported as missing:
 3. honest items, C0 + E3 (catch rate at the fixed threshold, AUROC, honest-code
    contrast);
 4. backdoors, E1 + E5 + E3A (H5, approval line).
+
+Alibaba Cloud Model Studio was considered for two more large monitors, but its
+API refused every request because the account was not in good standing, so it
+was dropped without any results.
 
 H7 compares the local monitors (A, B) with all large monitors that finished
 phase 1. Each monitor's own H4 result is also reported.
@@ -727,11 +728,11 @@ Large monitors on a free API tier:
 4. Run one monitor at a time:
 
 ```bash
-# phase 1 for one monitor; repeat with --monitor L2, L3, L4 (each has its own quota)
+# phase 1 for one monitor; repeat with --monitor L2 (each has its own quota)
 agenteval run monitor_persuasion --config configs/persuasion.yaml --monitor L1 --kinds backdoor --conditions C0,E3
 ```
 
-Groq needs `GROQ_API_KEY`, and Alibaba Model Studio needs `DASHSCOPE_API_KEY`.
+Groq needs `GROQ_API_KEY`.
 
 Rows of the other monitors already in the stage file are kept. If the free tier
 runs out, run the same command again later. Finished calls come from the

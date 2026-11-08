@@ -12,9 +12,7 @@ from agenteval.config import ModelSpec, StudyConfig
 FREE_PROVIDERS = frozenset({"ollama", "mockllm"})
 # Hosted providers with a free tier. Allowed only behind an explicit flag,
 # because the same key can also be billed once a paid plan is attached.
-# "dashscope" is Alibaba Cloud Model Studio through its OpenAI-compatible endpoint
-# (model names "openai-api/dashscope/<model>"), used only within the free quota.
-FREE_TIER_PROVIDERS = frozenset({"groq", "dashscope"})
+FREE_TIER_PROVIDERS = frozenset({"groq"})
 
 # Responses never expire: the key already covers model, messages, temperature and seed.
 CACHE_POLICY = CachePolicy(expiry=None)

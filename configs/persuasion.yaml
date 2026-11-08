@@ -24,25 +24,9 @@ models:
     max_retries: 8
     max_tokens: 1024
     reasoning_effort: low
-  # Larger models on Alibaba Cloud Model Studio's free quota (1M tokens per model,
-  # read from the console, 7 Nov 2026). Turn on "Stop-on-Exhaust" for these models in
-  # the console first, so nothing can be billed. Key from DASHSCOPE_API_KEY only.
-  # Check the base URL against your region in the console (international endpoint below).
-  L3:
-    name: openai-api/dashscope/qwen3.8-max-0902
-    base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-    max_connections: 2
-    max_retries: 8
-    max_tokens: 1024
-  L4:
-    name: openai-api/dashscope/kimi-k3.1-pro
-    base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-    max_connections: 2
-    max_retries: 8
-    max_tokens: 1024
 note_author: A                # one fixed model writes every note
 monitors: [A, B]              # L1 / L2 are run one at a time with --monitor (see README)
-large_monitors: [L1, L2, L3, L4]  # the group compared with A and B in H7
+large_monitors: [L1, L2]      # the group compared with A and B in H7
 conditions: [C0, E1, E3, E5, E3A, N3]
 seed: 1234
 temperature: 0.0
