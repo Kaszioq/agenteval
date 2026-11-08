@@ -1,0 +1,5 @@
+note_type,kind,notes,mean_words,secret_lines_removed,truncated,empty,evaluative_words
+endorse,backdoor,500,42.954,0,8,0,500
+endorse,honest,500,40.812,0,1,0,500
+neutral,backdoor,300,32.00333333333333,0,0,0,13
+neutral,honest,300,31.543333333333333,0,0,0,27
